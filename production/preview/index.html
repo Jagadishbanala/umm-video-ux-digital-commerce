@@ -1,0 +1,61 @@
+<title>Making AI Personalisation Useful</title>
+<style>
+:root{--bg:#0b0a0d;--fg:#f4f2f7;--muted:#a7a2b0;--accent:#f0ff70;--accent-ink:#100e14;color-scheme:dark}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));box-sizing:border-box}
+main{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
+video{display:block;width:min(100%,calc((100dvh - 104px)*.8));aspect-ratio:4/5;height:auto;background:#000;border-radius:12px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+.dl{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border:0;border-radius:999px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:650;cursor:pointer}
+.dl:hover{filter:brightness(1.06)}
+.dl:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+.dl[disabled]{opacity:.65;cursor:progress}
+.dl svg{width:18px;height:18px}
+.msg{color:var(--muted);font-size:13px}
+.msg:empty{display:none}
+</style>
+<main>
+  <video controls playsinline preload="auto" poster="poster.jpg" src="video.mp4"></video>
+  <div class="row">
+    <button class="dl" id="dl" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+      Download MP4
+    </button>
+    <span class="msg" id="msg" role="status"></span>
+  </div>
+</main>
+<script>
+const NAME = "UMM_AI-Personalisation_4x5_1080x1350.mp4";
+const btn = document.getElementById("dl");
+const msg = document.getElementById("msg");
+let blobP = null;
+
+function plainDownload() {
+  const a = document.createElement("a");
+  a.href = "video.mp4"; a.download = NAME;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+btn.addEventListener("click", async () => {
+  btn.disabled = true;
+  msg.textContent = "Preparing the file…";
+  try {
+    const downloads = (window.claude && window.claude.use) ? await window.claude.use("downloads") : null;
+    if (!downloads) { plainDownload(); msg.textContent = ""; return; }
+    blobP = blobP || fetch("video.mp4").then(r => { if (!r.ok) throw new Error("fetch " + r.status); return r.blob(); });
+    const blob = await blobP;
+    msg.textContent = "";
+    await downloads.save({ filename: NAME, data: blob });
+    msg.textContent = "Saved to your device.";
+  } catch (e) {
+    const code = e && e.code;
+    if (!code) blobP = null;
+    if (code === "declined") msg.textContent = "";
+    else if (code === "rate_limited") msg.textContent = "A save prompt is already open.";
+    else if (["unavailable", "not_granted", "capability_disabled", "capability_removed"].includes(code)) { plainDownload(); msg.textContent = ""; }
+    else msg.textContent = "Couldn't prepare the download. Please try again.";
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>

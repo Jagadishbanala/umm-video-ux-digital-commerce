@@ -1,0 +1,46 @@
+1
+00:00:00,350 --> 00:00:06,060
+A furniture store adds AI recommendations,
+expecting a more personal shopping experience.
+
+2
+00:00:06,300 --> 00:00:10,150
+But someone browsing for a small apartment
+gets shown oversized sofas,
+
+3
+00:00:10,150 --> 00:00:13,030
+and dining tables beyond their budget.
+
+4
+00:00:13,250 --> 00:00:17,670
+The system knows what they clicked.
+It's missing what matters to their decision.
+
+5
+00:00:18,400 --> 00:00:23,260
+At UMM, that's where we'd start:
+what would make these recommendations useful?
+
+6
+00:00:24,300 --> 00:00:26,900
+Perhaps it's asking about room size and budget.
+
+7
+00:00:26,900 --> 00:00:31,610
+Perhaps the catalogue needs consistent
+dimensions, prices and availability.
+
+8
+00:00:32,300 --> 00:00:35,400
+We bring those foundations together,
+build the recommendation experience,
+
+9
+00:00:35,400 --> 00:00:38,820
+and test whether it helps customers choose.
+
+10
+00:00:42,500 --> 00:00:48,300
+If AI personalisation is on your roadmap, let's work out
+what your business needs to make it work.

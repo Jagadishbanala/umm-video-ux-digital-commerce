@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>UMM · Making AI Personalisation Useful · 4:5 comp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:"Mosvita";src:url("../assets/brand/Mosvita-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Mosvita";src:url("../assets/brand/Mosvita-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Mosvita";src:url("../assets/brand/Mosvita-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"AeonikPro";src:url("../assets/brand/AeonikPro-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+
+/* UMM brand tokens (umm.digital) + neutral fictional retailer palette for the in-video storefront */
+:root{
+  --umm-ink:#100e14; --umm-ink-soft:#41414d; --umm-ink-quiet:#8a8a96; --umm-paper:#ffffff; --umm-canvas:#eeeeee;
+  --umm-citrus:#f0ff70; --umm-violet:#7b5cff; --umm-lilac:#dccfff; --umm-sky:#d1e7ff; --umm-sun:#ffe58f; --umm-blossom:#ffc4f2; --umm-coral:#ffc3c4;
+  --alert:#d8432f; --ok:#1f7a4c; --ok-bg:#e3f4ea; --amber:#9a6a00; --amber-bg:#fff1cc;
+  --store-bg:#fbfaf7; --store-ink:#1f1d1a; --store-muted:#76716a; --store-line:#e9e5de; --store-tile:#f2efea; --store-green:#2e4636;
+  --chrome:#eceef1; --chrome-2:#ffffff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0b0a0d;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1080px;height:1350px;overflow:hidden;transform-origin:0 0;background:#e7e4df;font-family:Inter,system-ui,sans-serif;color:var(--store-ink)}
+.fill{position:absolute;inset:0;width:100%;height:100%}
+.abs{position:absolute}
+video{display:block}
+.vwrap{position:absolute;inset:0;overflow:hidden;opacity:0}
+.vwrap video{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+#vBlur{object-fit:cover}
+#veil{background:radial-gradient(120% 90% at 30% 50%, rgba(246,244,240,.55), rgba(236,232,226,.35))}
+
+/* ---------- browser window (1440x900 internal, corner-pinned) ---------- */
+#win{position:absolute;left:0;top:0;width:1440px;height:900px;transform-origin:0 0;border-radius:18px;overflow:hidden;background:var(--store-bg);opacity:0;backface-visibility:hidden}
+#winShadow{position:absolute;left:0;top:0;width:1440px;height:900px;transform-origin:0 0;border-radius:18px;box-shadow:0 60px 120px rgba(16,14,20,.28),0 12px 30px rgba(16,14,20,.14);opacity:0}
+.chrome{position:absolute;left:0;top:0;right:0;height:88px;background:var(--chrome);border-bottom:1px solid #dcdfe4}
+.tabs{height:42px;display:flex;align-items:flex-end;padding-left:18px;gap:10px}
+.dots{display:flex;gap:9px;align-self:center;margin-right:14px}
+.dots i{width:13px;height:13px;border-radius:50%;display:block;background:#ff5f57}
+.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.tab{height:34px;width:300px;background:var(--chrome-2);border-radius:10px 10px 0 0;display:flex;align-items:center;gap:9px;padding:0 14px;font-size:13.5px;color:#3c4043;white-space:nowrap;overflow:hidden}
+.fav{width:16px;height:16px;border-radius:4px;background:var(--store-green);display:grid;place-items:center;color:#fff;font:600 10px/1 Fraunces,serif}
+.tab .x{margin-left:auto;color:#8a8f96}
+.plus{color:#5f6368;font-size:20px;align-self:center}
+.toolbar{height:46px;background:var(--chrome-2);display:flex;align-items:center;gap:16px;padding:0 16px;color:#5f6368;font-size:18px}
+.omni{flex:1;height:32px;border-radius:16px;background:#f1f3f4;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:14px;color:#202124}
+.omni b{font-weight:400;color:#6b7075}
+.vp{position:absolute;left:0;top:88px;width:1440px;height:812px;overflow:hidden;background:var(--store-bg)}
+.page{position:absolute;left:0;top:0;width:1440px}
+.site-h{height:76px;display:flex;align-items:center;gap:40px;padding:0 36px;border-bottom:1px solid var(--store-line);background:var(--store-bg)}
+.logo{font:600 30px/1 Fraunces,Georgia,serif;letter-spacing:-.02em;color:var(--store-ink)}
+.site-h nav{display:flex;gap:28px;font-size:15px;color:var(--store-ink);font-weight:500}
+.site-h nav span:last-child{color:#b5452f}
+.search{margin-left:auto;width:300px;height:40px;border-radius:20px;border:1px solid var(--store-line);background:#fff;display:flex;align-items:center;padding:0 16px;gap:10px;color:var(--store-muted);font-size:14px}
+.icons{display:flex;gap:18px;color:var(--store-ink)}
+.icons svg{width:22px;height:22px}
+.hero{position:absolute;left:28px;top:84px;width:1384px;height:500px;border-radius:22px;overflow:hidden;background:#cfc8bf}
+.hero video{width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,16,12,.42),rgba(20,16,12,0) 55%)}
+.hero-copy{position:absolute;left:56px;bottom:56px;z-index:2;color:#fff}
+.hero-copy .eb{font-size:13px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;opacity:.92}
+.hero-copy h2{font:500 56px/1.02 Fraunces,Georgia,serif;letter-spacing:-.02em;margin:12px 0 22px;max-width:560px}
+.btn{display:inline-flex;height:46px;align-items:center;padding:0 24px;border-radius:23px;background:#fff;color:var(--store-ink);font-size:15px;font-weight:600}
+#recs{position:absolute;left:28px;top:624px;width:1384px}
+.rec-head{display:flex;align-items:center;gap:16px}
+.rec-head h3{margin:0;font:600 28px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:var(--store-ink);display:flex;align-items:center;gap:12px}
+.spark{width:26px;height:26px;color:var(--umm-violet)}
+.ai-pill{height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:15px;background:#eee9ff;color:#4a39b8;font-size:13.5px;font-weight:600;position:relative;overflow:hidden;white-space:nowrap}
+.ai-pill .glint{position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);left:-80px}
+.see{margin-left:auto;font-size:15px;font-weight:500;color:var(--store-ink);text-decoration:underline;text-underline-offset:4px}
+.rec-sub{margin:8px 0 0;font-size:15px;color:var(--store-muted)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px}
+.card{position:relative;border-radius:16px;background:#fff;border:1px solid var(--store-line)}
+.card .img{position:relative;height:300px;border-radius:15px 15px 0 0;overflow:hidden;background:var(--store-tile)}
+.card .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+img.contain{object-fit:contain!important;padding:22px;background:#fff}
+.sk,.skl{background:linear-gradient(100deg,#ece8e2 20%,#f7f5f1 40%,#ece8e2 60%);background-size:300% 100%}
+.sk{position:absolute;inset:0}
+.meta{padding:16px 18px 18px;position:relative;height:88px}
+.meta .name{font-size:16.5px;font-weight:500;color:var(--store-ink)}
+.meta .price{font-size:17px;font-weight:600;color:var(--store-ink);margin-top:8px;font-variant-numeric:tabular-nums}
+.meta .skl{position:absolute;left:18px;height:14px;border-radius:7px}
+.heart{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;z-index:2}
+.heart svg{width:18px;height:18px}
+.qv{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);height:38px;padding:0 18px;border-radius:19px;background:var(--store-ink);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;white-space:nowrap;z-index:3;opacity:0}
+.cursor{position:absolute;left:0;top:0;width:34px;height:34px;opacity:0;z-index:40;transform-origin:4px 3px}
+#ripple{position:absolute;left:0;top:0;width:10px;height:10px;border-radius:50%;border:3px solid rgba(46,70,54,.9);opacity:0;z-index:19}
+.glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,0) 35%,rgba(255,255,255,.22) 50%,rgba(255,255,255,0) 65%);opacity:0;z-index:30;pointer-events:none}
+.dim{position:absolute;inset:0;background:#2a2731;opacity:0;z-index:29;pointer-events:none}
+/* improved page (scene 6) */
+#page2{opacity:0;height:812px;overflow:hidden}
+.prefbar{margin:20px 28px 0;height:60px;border-radius:30px;background:#fff;border:1px solid var(--store-line);display:flex;align-items:center;gap:14px;padding:0 22px;font-size:16px;color:var(--store-muted)}
+.prefbar b{color:var(--store-ink);font-weight:600}
+.pchip{height:36px;border-radius:18px;background:var(--ok-bg);color:var(--ok);display:inline-flex;align-items:center;padding:0 16px;font-weight:600;font-size:15px}
+.prefbar .edit{margin-left:auto;text-decoration:underline;color:var(--store-ink);font-weight:500}
+.p2head{margin:26px 28px 0;display:flex;align-items:baseline;gap:16px}
+.p2head h3{margin:0;font:600 30px/1.1 Inter,sans-serif;letter-spacing:-.02em;display:flex;align-items:center;gap:12px}
+.p2head span{font-size:16px;color:var(--store-muted)}
+.cards2{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:22px 28px 0}
+.card2{position:relative;background:#fff;border:1px solid var(--store-line);border-radius:18px;overflow:hidden}
+.card2 .img{height:300px;position:relative;background:var(--store-tile)}
+.card2 .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card2 .m{padding:18px 22px 20px}
+.card2 .nm{display:flex;justify-content:space-between;font-size:21px;font-weight:600}
+.card2 .sub{font-size:15px;color:var(--store-muted);margin-top:4px}
+.why{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.why span{height:34px;border-radius:17px;background:var(--ok-bg);color:var(--ok);display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:15px;font-weight:600}
+.cmpbox{position:absolute;right:20px;top:20px;height:36px;padding:0 14px 0 10px;border-radius:18px;background:#fff;display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;z-index:3}
+.cmpbox i{width:20px;height:20px;border-radius:5px;border:2px solid var(--store-ink);display:grid;place-items:center;font-style:normal;font-size:14px;color:#fff}
+.tray{position:absolute;left:0;right:0;bottom:0;height:300px;background:#fff;border-top:1px solid var(--store-line);box-shadow:0 -20px 50px rgba(31,29,26,.12);padding:22px 28px;transform:translateY(100%);z-index:5}
+.tray h4{margin:0 0 14px;font-size:20px}
+.tray table{width:100%;border-collapse:collapse;font-size:17px}
+.tray td,.tray th{padding:11px 0;border-bottom:1px solid var(--store-line);text-align:left}
+.tray th{font-weight:600}
+.tray td:first-child{color:var(--store-muted);width:30%}
+
+/* ---------- store sheets (scene 2) ---------- */
+.sheet{position:absolute;left:60px;top:330px;width:960px;background:var(--store-bg);border-radius:30px;padding:26px 28px 28px;box-shadow:0 40px 90px rgba(16,14,20,.30);opacity:0}
+.sh-top{display:flex;align-items:center;gap:16px;height:36px}
+.logo.sm{font-size:24px}
+.crumb{font-size:16px;color:var(--store-muted)}
+.next{margin-left:auto;height:34px;border-radius:17px;background:#eee9ff;color:#4a39b8;font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:8px;padding:0 14px}
+.sh-img{position:relative;height:400px;margin-top:14px;border-radius:20px;overflow:hidden;background:var(--store-tile)}
+.sh-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.sh-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px}
+.sh-name{font-size:32px;font-weight:600;letter-spacing:-.02em}
+.sh-price{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
+.tabs2{display:flex;gap:30px;margin-top:16px;border-bottom:1px solid var(--store-line);font-size:19px;color:var(--store-muted);font-weight:500}
+.tabs2 span{padding-bottom:12px;position:relative}
+.tabs2 span u{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--store-ink);transform:scaleX(0);transform-origin:0 50%;text-decoration:none}
+.dims{margin-top:16px;font-size:22px;font-weight:600;color:var(--store-ink);font-variant-numeric:tabular-nums}
+.cmp{margin-top:20px;display:grid;gap:14px;font-family:"AeonikPro",Inter,sans-serif}
+.cmp-row{display:grid;grid-template-columns:170px 1fr;align-items:center;gap:14px}
+.cmp-lab{font-size:19px;color:var(--umm-ink-soft)}
+.cmp-track{position:relative;height:48px}
+.cmp-bar{position:absolute;left:0;top:0;height:48px;border-radius:12px;display:flex;align-items:center;padding:0 16px;font-size:21px;font-weight:600;white-space:nowrap;transform-origin:0 50%;font-family:Inter,sans-serif}
+.cmp-bar.ink{background:var(--umm-ink);color:#fff}
+.cmp-bar.space{background:#fff;border:2px solid var(--umm-ink);color:var(--umm-ink)}
+.over{position:absolute;top:0;height:48px;border-radius:0 12px 12px 0;background:repeating-linear-gradient(135deg,rgba(216,67,47,.88) 0 10px,rgba(216,67,47,.62) 10px 20px);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;transform-origin:0 50%;font-family:Inter,sans-serif}
+.mbar{position:absolute;left:7%;right:7%;bottom:26px;height:2px;background:#fff;opacity:0;transform-origin:50% 50%}
+.mbar i{position:absolute;top:-10px;width:2px;height:22px;background:#fff}
+.mbar i.l{left:0}.mbar i.r{right:0}
+.mbar span{position:absolute;left:50%;top:-22px;transform:translateX(-50%);height:44px;padding:0 18px;border-radius:22px;background:#fff;color:var(--umm-ink);font:600 22px/44px Inter,sans-serif;white-space:nowrap}
+
+/* ---------- scene 3 ---------- */
+.panel{position:absolute;left:60px;width:960px;background:#fff;border-radius:30px;padding:26px 28px;box-shadow:0 30px 80px rgba(16,14,20,.16);opacity:0}
+.ph{display:flex;align-items:center;gap:14px;font:600 26px/1.1 Inter,sans-serif;letter-spacing:-.02em}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:20px}
+.tile{border:1px solid var(--store-line);border-radius:18px;overflow:hidden;background:#fff}
+.tile .ti{height:170px;position:relative;background:var(--store-tile)}
+.tile .ti img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tile .tm{padding:12px 14px 14px;font-size:17px;font-weight:500}
+.tile .tm b{display:block;margin-top:4px;font-weight:700}
+.pause{position:absolute;right:26px;top:22px;width:44px;height:44px;border-radius:50%;background:var(--umm-ink);display:grid;place-items:center;opacity:0}
+.pause i{display:block;width:5px;height:16px;background:#fff;border-radius:2px;margin:0 2.5px}
+.pause span{display:flex}
+.chip{position:absolute;height:84px;border-radius:42px;display:flex;align-items:center;justify-content:center;gap:12px;font:500 30px/1 "Mosvita",sans-serif;letter-spacing:-.02em;opacity:0;white-space:nowrap}
+.chip.known{background:var(--umm-ink);color:#fff}
+.chip.unknown{border:3px dashed #9a97a3;color:var(--umm-ink-soft);background:rgba(255,255,255,.7)}
+.chip svg{width:30px;height:30px}
+#wires{position:absolute;inset:0;pointer-events:none}
+
+/* ---------- scene 4 ---------- */
+#inkWipe{position:absolute;inset:0;background:var(--umm-ink);clip-path:inset(100% 0 0 0);z-index:60}
+#introLogo{position:absolute;left:50%;top:50%;width:700px;transform:translate(-50%,-50%);filter:invert(1);opacity:0}
+.mk{position:absolute;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:600 24px/1 "Mosvita",sans-serif;color:var(--umm-ink);box-shadow:0 6px 16px rgba(16,14,20,.18);opacity:0;z-index:4}
+.t-sky{background:var(--umm-sky)}.t-lilac{background:var(--umm-lilac)}.t-sun{background:var(--umm-sun)}.t-blossom{background:var(--umm-blossom)}
+.tag{display:inline-flex;height:30px;align-items:center;padding:0 12px;border-radius:15px;background:#fde3df;color:var(--alert);font-size:15px;font-weight:700;margin-top:8px}
+.catbox{position:absolute;border:1px solid var(--store-line);border-radius:18px;padding:16px 18px;background:#fbfaf7}
+.catbox h5{margin:0 0 10px;font-size:16px;color:var(--store-muted);font-weight:600;letter-spacing:.02em}
+.catbox div{display:flex;justify-content:space-between;font-size:17px;padding:8px 0;border-bottom:1px solid var(--store-line)}
+.catbox div:last-child{border:0}
+.catbox em{font-style:normal;font-weight:700;color:var(--alert);text-decoration:underline wavy rgba(216,67,47,.6);text-underline-offset:5px}
+.arow{position:absolute;left:60px;width:960px;height:116px;background:#fff;border-radius:24px;display:flex;align-items:center;gap:22px;padding:0 26px;box-shadow:0 14px 36px rgba(16,14,20,.08);opacity:0}
+.arow .mk{position:static;opacity:1;box-shadow:none;flex:none}
+.arow .al{font:400 19px/1.2 "AeonikPro",sans-serif;color:var(--umm-ink-quiet)}
+.arow .aq{font:500 33px/1.12 "Mosvita",sans-serif;letter-spacing:-.025em;color:var(--umm-ink);margin-top:6px}
+
+/* ---------- scene 5 ---------- */
+.ui{position:absolute;left:60px;width:960px;background:#fff;border-radius:30px;padding:30px 32px;box-shadow:0 30px 80px rgba(16,14,20,.14);opacity:0;transform-origin:50% 0}
+.ui h4{margin:0;font:600 30px/1.15 Inter,sans-serif;letter-spacing:-.02em}
+.ui .s{font-size:18px;color:var(--store-muted);margin-top:6px}
+.opt{display:inline-flex;height:28px;border-radius:14px;background:var(--store-tile);color:var(--store-muted);font-size:14px;font-weight:600;padding:0 12px;align-items:center;margin-left:12px;vertical-align:middle}
+.fld{margin-top:24px}
+.fl{display:flex;justify-content:space-between;font-size:19px;font-weight:600}
+.fl b{font-variant-numeric:tabular-nums}
+.slider{position:relative;height:10px;border-radius:5px;background:var(--store-line);margin-top:18px}
+.slider .fillbar{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--store-ink)}
+.slider .knob{position:absolute;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;border:3px solid var(--store-ink);box-shadow:0 4px 10px rgba(0,0,0,.15)}
+.segs{display:flex;gap:12px;margin-top:14px}
+.segs span{flex:1;height:54px;border-radius:14px;border:2px solid var(--store-line);display:grid;place-items:center;font-size:18px;font-weight:600;color:var(--store-ink);position:relative;overflow:hidden}
+.segs span .on{position:absolute;inset:0;background:var(--store-ink);color:#fff;display:grid;place-items:center;opacity:0}
+.uifoot{display:flex;align-items:center;gap:22px;margin-top:26px}
+.uifoot .go{height:54px;border-radius:27px;background:var(--store-ink);color:#fff;display:inline-flex;align-items:center;padding:0 26px;font-size:18px;font-weight:600}
+.uifoot .skip{font-size:17px;color:var(--store-muted);text-decoration:underline}
+.rec-t{width:100%;border-collapse:collapse;margin-top:16px}
+.rec-t th{font:600 14px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--store-muted);text-align:left;padding:10px 0 12px;border-bottom:1px solid var(--store-line)}
+.rec-t td{padding:14px 0;border-bottom:1px solid var(--store-line);font-size:19px;vertical-align:middle;font-variant-numeric:tabular-nums}
+.rec-t tr:last-child td{border-bottom:0}
+.pr{display:flex;align-items:center;gap:14px;font-weight:600}
+.pr img{width:70px;height:70px;border-radius:12px;object-fit:cover;background:var(--store-tile);flex:none}
+.cell{position:relative;height:40px;display:flex;align-items:center}
+.cell .raw,.cell .clean{position:absolute;left:0;top:50%;transform:translateY(-50%);white-space:nowrap}
+.cell .raw{color:var(--alert);font-weight:600;text-decoration:underline wavy rgba(216,67,47,.5);text-underline-offset:5px}
+.cell .clean{font-weight:600;opacity:0}
+.pill{display:inline-flex;height:32px;border-radius:16px;align-items:center;padding:0 12px;font-size:15px;font-weight:700}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.wait{background:var(--amber-bg);color:var(--amber)}
+
+/* ---------- scene 6 overlays ---------- */
+.bchip{position:absolute;left:60px;height:84px;border-radius:42px;background:var(--umm-citrus);color:var(--umm-ink);display:flex;align-items:center;gap:14px;padding:0 30px 0 22px;font:500 34px/1 "Mosvita",sans-serif;letter-spacing:-.02em;box-shadow:0 16px 40px rgba(16,14,20,.22);opacity:0;white-space:nowrap;z-index:6}
+.bchip i{width:42px;height:42px;border-radius:50%;background:var(--umm-ink);color:var(--umm-citrus);display:grid;place-items:center;font-style:normal;font-size:24px}
+.hud{position:absolute;opacity:0}
+.rec{left:60px;top:1000px;height:56px;border-radius:28px;background:rgba(255,255,255,.92);display:flex;align-items:center;gap:12px;padding:0 22px;font:600 20px/1 Inter,sans-serif;color:var(--umm-ink)}
+.rec i{width:14px;height:14px;border-radius:50%;background:#e5372a;display:block}
+.task{left:60px;top:1074px;width:960px;height:150px;border-radius:28px;background:rgba(255,255,255,.94);padding:24px 30px;display:flex;gap:22px;align-items:center;box-shadow:0 20px 50px rgba(16,14,20,.18)}
+.task .box{width:52px;height:52px;border-radius:14px;border:3px solid var(--umm-ink);flex:none;display:grid;place-items:center;position:relative}
+.task .box b{position:absolute;inset:-3px;border-radius:14px;background:var(--ok);display:grid;place-items:center;color:#fff;font-size:30px;opacity:0}
+.task .tl{font:600 15px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--umm-ink-quiet)}
+.task .tq{font:500 32px/1.12 "Mosvita",sans-serif;letter-spacing:-.02em;color:var(--umm-ink);margin-top:8px}
+.task .st{margin-left:auto;align-self:flex-start;position:relative;height:36px;width:150px}
+.task .st span{position:absolute;right:0;top:0;height:36px;border-radius:18px;padding:0 14px;display:inline-flex;align-items:center;font:700 15px/1 Inter,sans-serif;white-space:nowrap}
+
+/* ---------- scene 7 end card ---------- */
+#end{position:absolute;inset:0;background:var(--umm-ink);opacity:0;overflow:hidden}
+#end .ring{position:absolute;left:50%;top:44%;border:1.5px solid #2a2731;border-radius:50%;transform:translate(-50%,-50%)}
+#endPanel{position:absolute;left:60px;top:300px;width:960px;transform-origin:50% 40%;opacity:0}
+#endPanel .card2 .img{height:260px}
+.endtxt{position:absolute;left:84px;right:84px;top:450px;font-family:"Mosvita",sans-serif;color:#fff}
+.endtxt .ln{color:#fff;font-size:84px;line-height:1.02}
+.endtxt .mark{bottom:-.04em;height:1.0em;left:-12px;right:-12px;border-radius:10px}
+.endtxt .w{padding:0 14px .14em;margin:0 -14px -.14em}
+.endfoot{position:absolute;left:84px;right:84px;bottom:110px;display:flex;align-items:center;justify-content:space-between;opacity:0}
+.endfoot img{height:34px;filter:invert(1)}
+.endfoot span{font:400 26px/1 "AeonikPro",sans-serif;color:#b9b9c4}
+.endrule{position:absolute;left:84px;right:84px;bottom:180px;height:1px;background:#2a2731;transform-origin:0 50%;transform:scaleX(0)}
+
+/* ---------- UMM on-screen copy cards ---------- */
+.copy{position:absolute;left:60px;top:92px;width:960px;padding:36px 44px 38px;border-radius:30px;background:rgba(255,255,255,.84);
+  -webkit-backdrop-filter:blur(26px) saturate(1.15);backdrop-filter:blur(26px) saturate(1.15);
+  box-shadow:0 30px 70px rgba(16,14,20,.16),0 2px 0 rgba(255,255,255,.6) inset;z-index:70;opacity:0;font-family:Mosvita,"AeonikPro",sans-serif}
+.ln{font-weight:500;font-size:56px;line-height:1.06;letter-spacing:-.035em;color:var(--umm-ink)}
+.lnw{overflow:hidden}
+.w{display:inline-block;overflow:hidden;vertical-align:top;padding:0 10px .14em;margin:0 -10px -.14em}
+.wi{display:inline-block;transform:translateY(115%);position:relative}
+.mark{position:absolute;left:-9px;right:-9px;bottom:.08em;height:.44em;background:var(--umm-citrus);z-index:-1;transform:scaleX(0);transform-origin:0 50%;border-radius:4px}
+.hlw{position:relative;z-index:0}
+#bug{position:absolute;right:60px;bottom:58px;height:58px;padding:0 24px;border-radius:29px;display:flex;align-items:center;background:rgba(255,255,255,.82);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 10px 30px rgba(16,14,20,.12);z-index:80;opacity:0}
+#bug img{height:22px;width:auto;display:block}
+</style>
+</head>
+<body>
+<div id="stage">
+  <!-- backgrounds -->
+  <video id="vBlur" class="fill" src="../assets/footage/v_living_blur.mp4" muted playsinline preload="auto"></video>
+  <div id="veil" class="fill"></div>
+  <div class="vwrap" id="livWrap"><video id="vLivBg" src="../assets/footage/v_living_blur.mp4" muted playsinline preload="auto"></video><div class="fill" style="background:rgba(238,238,238,.80)"></div></div>
+  <div class="vwrap" id="boxWrap"><video id="vBoxes" src="../assets/footage/v_boxes.mp4" muted playsinline preload="auto"></video><div class="fill" id="boxDim" style="background:#100e14;opacity:0"></div><div class="fill" id="boxVeil" style="background:rgba(240,238,234,.62);opacity:0"></div></div>
+  <div class="vwrap" id="shopWrap"><video id="vShop" src="../assets/footage/v_shopper_ots.mp4" muted playsinline preload="auto"></video></div>
+  <div class="vwrap" id="profWrap"><video id="vProfile" src="../assets/footage/v_profile.mp4" muted playsinline preload="auto"></video></div>
+  <div class="vwrap" id="smileWrap"><video id="vSmile" src="../assets/footage/v_smile_long.mp4" muted playsinline preload="auto"></video></div>
+
+  <!-- browser window: scene 1 storefront + scene 6 improved page -->
+  <div id="winShadow"></div>
+  <div id="win">
+    <div class="chrome">
+      <div class="tabs"><span class="dots"><i></i><i></i><i></i></span><div class="tab"><span class="fav">L</span>Larkfield · Living room furniture<span class="x">×</span></div><span class="plus">+</span></div>
+      <div class="toolbar"><span>&#8592;</span><span>&#8594;</span><span>&#8635;</span>
+        <div class="omni"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2.4"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>larkfield.store<b id="omniPath">/living-room</b></div>
+        <span>&#9734;</span><span>&#8942;</span></div>
+    </div>
+    <div class="vp">
+      <div class="page" id="page">
+        <header class="site-h"><div class="logo">Larkfield</div><nav><span>Living</span><span>Dining</span><span>Bedroom</span><span>Storage</span><span>Outdoor</span><span>Sale</span></nav>
+          <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search sofas, tables, lighting…</div>
+          <div class="icons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></div></header>
+        <section class="hero"><video id="vHero" src="../assets/footage/v_living.mp4" muted playsinline preload="auto"></video>
+          <div class="hero-copy"><div class="eb">The autumn living edit</div><h2>Make room for slow evenings</h2><span class="btn">Shop living room</span></div></section>
+        <section id="recs">
+          <div class="rec-head" id="recHead"><h3><svg class="spark" id="spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.5 4.9 3.1 8.6 9 10.5-5.9 1.9-8.5 5.6-9 10.5-.5-4.9-3.1-8.6-9-10.5 5.9-1.9 8.5-5.6 9-10.5z"/></svg>Recommended for you</h3>
+            <span class="ai-pill"><span class="glint" id="glint"></span>New · Personalised with AI</span><span class="see">See all</span></div>
+          <p class="rec-sub" id="recSub">Based on what you’ve been browsing</p>
+          <div class="cards">
+            <article class="card" id="c0"><div class="img"><div class="sk"></div><img src="../assets/stock/p_sofa_corner.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span class="qv" id="qv">View details</span></div><div class="meta"><div class="skl" style="top:18px;width:70%"></div><div class="skl" style="top:46px;width:34%"></div><div class="txt"><div class="name">Hollis 5-seat corner sofa</div><div class="price">£2,890</div></div></div></article>
+            <article class="card" id="c1"><div class="img"><div class="sk"></div><img class="contain" src="../assets/stock/p_sofa_leather.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span></div><div class="meta"><div class="skl" style="top:18px;width:64%"></div><div class="skl" style="top:46px;width:30%"></div><div class="txt"><div class="name">Aldo 3-seat leather sofa</div><div class="price">£1,249</div></div></div></article>
+            <article class="card" id="c2"><div class="img"><div class="sk"></div><img src="../assets/stock/p_dining.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span></div><div class="meta"><div class="skl" style="top:18px;width:72%"></div><div class="skl" style="top:46px;width:32%"></div><div class="txt"><div class="name">Marlow 8-seat dining set</div><div class="price">£3,450</div></div></div></article>
+          </div>
+        </section>
+      </div>
+      <div class="page" id="page2">
+        <header class="site-h"><div class="logo">Larkfield</div><nav><span>Living</span><span>Dining</span><span>Bedroom</span><span>Storage</span><span>Outdoor</span><span>Sale</span></nav>
+          <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search sofas, tables, lighting…</div>
+          <div class="icons"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></div></header>
+        <div class="prefbar"><b>Your preferences</b><span class="pchip">Up to £1,300</span><span class="pchip">Under 220 cm wide</span><span class="edit">Edit</span></div>
+        <div class="p2head"><h3><svg class="spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.5 4.9 3.1 8.6 9 10.5-5.9 1.9-8.5 5.6-9 10.5-.5-4.9-3.1-8.6-9-10.5 5.9-1.9 8.5-5.6 9-10.5z"/></svg>Recommended for you</h3><span>Picked for your space and budget</span></div>
+        <div class="cards2">
+          <article class="card2" id="k0"><div class="img"><img class="contain" src="../assets/stock/p_sofa_leather.jpg" alt=""><span class="cmpbox"><i id="cb0">✓</i>Compare</span></div>
+            <div class="m"><div class="nm"><span>Aldo 3-seat leather sofa</span><span>£1,249</span></div><div class="sub">W 214 cm · In stock</div>
+              <div class="why"><span>✓ Within your budget</span><span>✓ Matches your selected width</span></div></div></article>
+          <article class="card2" id="k1"><div class="img"><img src="../assets/stock/p_sofa_small.jpg" alt=""><span class="cmpbox"><i id="cb1">✓</i>Compare</span></div>
+            <div class="m"><div class="nm"><span>Nora 2-seat sofa</span><span>£899</span></div><div class="sub">W 176 cm · In stock</div>
+              <div class="why"><span>✓ Within your budget</span><span>✓ Matches your selected width</span></div></div></article>
+        </div>
+        <div class="tray" id="tray"><h4>Comparing 2 sofas</h4>
+          <table><tr><th></th><th>Aldo 3-seat leather</th><th>Nora 2-seat</th></tr>
+            <tr><td>Width</td><td>214 cm</td><td>176 cm</td></tr><tr><td>Price</td><td>£1,249</td><td>£899</td></tr><tr><td>Delivery</td><td>In stock · 5 days</td><td>In stock · 3 days</td></tr></table></div>
+      </div>
+    </div>
+    <div id="ripple"></div>
+    <svg class="cursor" id="cursor" viewBox="0 0 34 34"><path d="M4 3 L4 27 L10.5 21 L15 31 L19.5 29 L15 19.5 L24 19.5 Z" fill="#111" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    <div class="dim" id="dim"></div>
+    <div class="glare" id="glare"></div>
+  </div>
+  <div id="heroFull" class="abs" style="overflow:hidden;z-index:5"><video id="vHeroFull" src="../assets/footage/v_living.mp4" muted playsinline preload="auto" style="position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:28% 50%"></video></div>
+
+  <!-- scene 2: product sheets -->
+  <div class="sheet" id="pdpA">
+    <div class="sh-top"><span class="logo sm">Larkfield</span><span class="crumb">Living / Sofas / Corner sofas</span></div>
+    <div class="sh-img"><img src="../assets/stock/p_sofa_corner.jpg" alt=""><div class="mbar" id="mbarA"><i class="l"></i><i class="r"></i><span>304 cm</span></div></div>
+    <div class="sh-row"><div class="sh-name">Hollis 5-seat corner sofa</div><div class="sh-price">£2,890</div></div>
+    <div class="tabs2"><span>Overview</span><span>Dimensions<u id="tabU"></u></span><span>Delivery</span></div>
+    <div class="dims" id="dimsA">W 304 cm · D 220 cm · H 85 cm</div>
+    <div class="cmp" id="cmpA">
+      <div class="cmp-row"><span class="cmp-lab">Sofa width</span><div class="cmp-track"><div class="cmp-bar ink" id="barA1" style="width:688px">304 cm</div></div></div>
+      <div class="cmp-row"><span class="cmp-lab">Their wall</span><div class="cmp-track"><div class="cmp-bar space" id="barA2" style="width:498px">220 cm</div><div class="over" id="ovA" style="left:498px;width:190px">+84 cm</div></div></div>
+    </div>
+  </div>
+  <div class="sheet" id="pdpB">
+    <div class="sh-top"><span class="logo sm">Larkfield</span><span class="crumb">Dining / Tables</span><span class="next"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.5 4.9 3.1 8.6 9 10.5-5.9 1.9-8.5 5.6-9 10.5-.5-4.9-3.1-8.6-9-10.5 5.9-1.9 8.5-5.6 9-10.5z"/></svg>Next for you</span></div>
+    <div class="sh-img"><img src="../assets/stock/p_dining.jpg" alt=""></div>
+    <div class="sh-row"><div class="sh-name">Marlow 8-seat dining set</div><div class="sh-price" id="priceB">£3,450</div></div>
+    <div class="dims" style="color:var(--store-muted);font-weight:500">Seats 8 · W 240 cm · Solid oak</div>
+    <div class="cmp" id="cmpB">
+      <div class="cmp-row"><span class="cmp-lab">Price</span><div class="cmp-track"><div class="cmp-bar ink" id="barB1" style="width:694px">£3,450</div></div></div>
+      <div class="cmp-row"><span class="cmp-lab">Their budget</span><div class="cmp-track"><div class="cmp-bar space" id="barB2" style="width:262px">£1,300</div><div class="over" id="ovB" style="left:262px;width:432px">+£2,150</div></div></div>
+    </div>
+  </div>
+  <svg class="cursor" id="cur2" viewBox="0 0 34 34" style="width:44px;height:44px"><path d="M4 3 L4 27 L10.5 21 L15 31 L19.5 29 L15 19.5 L24 19.5 Z" fill="#111" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+
+  <!-- scene 3: frozen recommendations + signals -->
+  <div class="panel" id="frozen" style="top:400px">
+    <div class="ph"><svg class="spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.5 4.9 3.1 8.6 9 10.5-5.9 1.9-8.5 5.6-9 10.5-.5-4.9-3.1-8.6-9-10.5 5.9-1.9 8.5-5.6 9-10.5z"/></svg>Recommended for you</div>
+    <div class="tiles" id="ftiles">
+      <div class="tile"><div class="ti"><img src="../assets/stock/p_sofa_corner.jpg" alt=""></div><div class="tm">Hollis corner sofa<b>£2,890</b></div></div>
+      <div class="tile"><div class="ti"><img class="contain" src="../assets/stock/p_sofa_leather.jpg" alt=""></div><div class="tm">Aldo leather sofa<b>£1,249</b></div></div>
+      <div class="tile"><div class="ti"><img src="../assets/stock/p_dining.jpg" alt=""></div><div class="tm">Marlow dining set<b>£3,450</b></div></div>
+    </div>
+    <div class="pause" id="pause"><span><i></i><i></i></span></div>
+  </div>
+  <svg id="wires" viewBox="0 0 1080 1350">
+    <path id="wK" d="M204 900 C204 830 232 810 232 748" fill="none" stroke="#100e14" stroke-width="4" stroke-linecap="round"/>
+    <circle id="wKd" cx="232" cy="748" r="9" fill="#100e14"/>
+    <path id="wU1" d="M540 900 L540 846" fill="none" stroke="#9a97a3" stroke-width="4" stroke-dasharray="10 10" stroke-linecap="round"/>
+    <path id="wU2" d="M876 900 L876 846" fill="none" stroke="#9a97a3" stroke-width="4" stroke-dasharray="10 10" stroke-linecap="round"/>
+  </svg>
+  <div class="chip known" id="chK" style="left:60px;top:900px;width:288px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Viewed: Sofa</div>
+  <div class="chip unknown" id="chU1" style="left:396px;top:900px;width:288px">Room size?</div>
+  <div class="chip unknown" id="chU2" style="left:732px;top:900px;width:288px">Budget?</div>
+
+  <!-- scene 4: annotated panel -->
+  <div class="panel" id="ann" style="top:330px;height:340px;padding:0">
+    <div class="chip known" style="position:absolute;left:28px;top:24px;height:56px;padding:0 22px;font-size:22px;opacity:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Viewed: Sofa</div>
+    <div class="tile abs" style="left:28px;top:98px;width:300px"><div class="ti" style="height:130px"><img src="../assets/stock/p_sofa_corner.jpg" alt=""></div><div class="tm" style="font-size:16px">Hollis corner sofa<br><span class="tag">Too large</span></div></div>
+    <div class="tile abs" style="left:348px;top:98px;width:300px"><div class="ti" style="height:130px"><img src="../assets/stock/p_dining.jpg" alt=""></div><div class="tm" style="font-size:16px">Marlow dining set<br><span class="tag">Beyond budget</span></div></div>
+    <div class="catbox" style="left:668px;top:24px;width:264px;height:292px"><h5>CATALOGUE · WIDTH</h5><div>Hollis<em>304cm</em></div><div>Aldo<em>2.14 m</em></div><div>Nora<em>69 in</em></div><div>Ines<em>—</em></div></div>
+    <div class="mk t-sky" id="m1" style="left:226px;top:2px">1</div>
+    <div class="mk t-lilac" id="m2" style="left:290px;top:76px">2</div>
+    <div class="mk t-sun" id="m3" style="left:610px;top:76px">3</div>
+    <div class="mk t-blossom" id="m4" style="left:896px;top:2px">4</div>
+  </div>
+  <div class="arow" id="a1" style="top:704px"><div class="mk t-sky">1</div><div><div class="al">Customer signal · Viewed a sofa</div><div class="aq">What are they trying to find?</div></div></div>
+  <div class="arow" id="a2" style="top:834px"><div class="mk t-lilac">2</div><div><div class="al">Recommended sofa · Too large</div><div class="aq">Do we know their space requirements?</div></div></div>
+  <div class="arow" id="a3" style="top:964px"><div class="mk t-sun">3</div><div><div class="al">Recommended table · Beyond budget</div><div class="aq">Have they shared a budget?</div></div></div>
+  <div class="arow" id="a4" style="top:1094px"><div class="mk t-blossom">4</div><div><div class="al">Product catalogue · Inconsistent dimensions</div><div class="aq">Can the system compare products reliably?</div></div></div>
+
+  <!-- scene 5: preference selector + product records -->
+  <div class="ui" id="pref" style="top:300px">
+    <h4>Shopping for a sofa? <span class="opt">Optional</span></h4>
+    <div class="s">Tell us about your space and budget to tailor your picks.</div>
+    <div class="fld"><div class="fl"><span>Budget</span><b id="budgetVal">Any</b></div>
+      <div class="slider"><div class="fillbar" id="sfill" style="width:100%"></div><div class="knob" id="sknob" style="left:100%"></div></div></div>
+    <div class="fld"><div class="fl"><span>Maximum sofa width</span></div>
+      <div class="segs"><span>Under 180 cm</span><span>Under 220 cm<b class="on" id="segOn">Under 220 cm</b></span><span>Any size</span></div></div>
+    <div class="uifoot"><span class="go">Show my matches</span><span class="skip">Skip</span></div>
+  </div>
+  <svg class="cursor" id="cur5" viewBox="0 0 34 34" style="width:44px;height:44px"><path d="M4 3 L4 27 L10.5 21 L15 31 L19.5 29 L15 19.5 L24 19.5 Z" fill="#111" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+  <div class="ui" id="records" style="top:770px;padding:26px 32px 18px">
+    <h4 style="font-size:26px">Product data</h4>
+    <table class="rec-t">
+      <tr><th style="width:44%">Product</th><th>Width</th><th>Price</th><th>Stock</th></tr>
+      <tr><td><div class="pr"><img src="../assets/stock/p_sofa_leather.jpg" alt="" style="object-fit:contain;background:#fff">Aldo 3-seat</div></td>
+        <td><div class="cell"><span class="raw">2.14m</span><span class="clean">214 cm</span></div></td><td><div class="cell"><span class="raw">1249</span><span class="clean">£1,249</span></div></td><td><div class="cell"><span class="raw">?</span><span class="clean"><span class="pill ok">In stock</span></span></div></td></tr>
+      <tr><td><div class="pr"><img src="../assets/stock/p_sofa_small.jpg" alt="">Nora 2-seat</div></td>
+        <td><div class="cell"><span class="raw">69 in</span><span class="clean">176 cm</span></div></td><td><div class="cell"><span class="raw">£899.00</span><span class="clean">£899</span></div></td><td><div class="cell"><span class="raw">?</span><span class="clean"><span class="pill ok">In stock</span></span></div></td></tr>
+      <tr><td><div class="pr"><img src="../assets/stock/p_sofa_corner.jpg" alt="">Hollis corner</div></td>
+        <td><div class="cell"><span class="raw">304cm</span><span class="clean">304 cm</span></div></td><td><div class="cell"><span class="raw">2,890 GBP</span><span class="clean">£2,890</span></div></td><td><div class="cell"><span class="raw">?</span><span class="clean"><span class="pill wait">6–8 weeks</span></span></div></td></tr>
+    </table>
+  </div>
+
+  <!-- scene 6 overlays -->
+  <svg id="leaders" viewBox="0 0 1080 1350" style="position:absolute;inset:0;pointer-events:none;z-index:5">
+    <path id="ld1" fill="none" stroke="#100e14" stroke-width="3"/><circle id="ld1d" r="8" fill="#100e14"/>
+    <path id="ld2" fill="none" stroke="#100e14" stroke-width="3"/><circle id="ld2d" r="8" fill="#100e14"/>
+  </svg>
+  <div class="bchip" id="bc1" style="top:1010px"><i>✓</i>Within your budget.</div>
+  <div class="bchip" id="bc2" style="top:1112px"><i>✓</i>Matches your selected width.</div>
+  <div class="hud rec" id="hudRec"><i></i>REC · Usability test</div>
+  <div class="hud task" id="hudTask"><div class="box"><b id="taskTick">✓</b></div><div><div class="tl">Task</div><div class="tq">Find a sofa that fits your space and budget.</div></div>
+    <div class="st"><span id="stProg" style="background:var(--amber-bg);color:var(--amber)">In progress</span><span id="stDone" style="background:var(--ok-bg);color:var(--ok);opacity:0">✓ Completed</span></div></div>
+
+  <!-- scene 7 end card -->
+  <div id="end">
+    <div class="ring" id="r1" style="width:620px;height:620px"></div>
+    <div class="ring" id="r2" style="width:880px;height:880px"></div>
+    <div class="ring" id="r3" style="width:1160px;height:1160px"></div>
+    <div id="endPanel"><div class="ui" style="position:relative;left:0;opacity:1;padding:26px 28px">
+      <div class="ph"><svg class="spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.5 4.9 3.1 8.6 9 10.5-5.9 1.9-8.5 5.6-9 10.5-.5-4.9-3.1-8.6-9-10.5 5.9-1.9 8.5-5.6 9-10.5z"/></svg>Recommended for you</div>
+      <div class="cards2" style="margin:20px 0 0">
+        <article class="card2"><div class="img"><img class="contain" src="../assets/stock/p_sofa_leather.jpg" alt=""></div><div class="m"><div class="nm"><span>Aldo 3-seat leather</span><span>£1,249</span></div><div class="why"><span>✓ Within your budget</span></div></div></article>
+        <article class="card2"><div class="img"><img src="../assets/stock/p_sofa_small.jpg" alt=""></div><div class="m"><div class="nm"><span>Nora 2-seat</span><span>£899</span></div><div class="why"><span>✓ Matches your width</span></div></div></article>
+      </div></div></div>
+    <div class="endtxt" id="endTxt"></div>
+    <div class="endrule" id="endRule"></div>
+    <div class="endfoot" id="endFoot"><img src="../assets/brand/umm-main-logo.svg" alt="UMM — Unified Modern Minds"><span>UX &amp; Digital Commerce · umm.digital</span></div>
+  </div>
+
+  <!-- scene 4 intro: ink wipe with logo -->
+  <div id="inkWipe"><img id="introLogo" src="../assets/brand/umm-main-logo.svg" alt=""></div>
+
+  <div id="cards"></div>
+  <div id="bug"><img src="../assets/brand/umm-main-logo.svg" alt="UMM — Unified Modern Minds"></div>
+</div>
+
+<script>
+/* ---------------- timing + easing ---------------- */
+const DURATION = 50.0, FPS = 30;
+function bez(x1,y1,x2,y2){const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const sx=t=>((ax*t+bx)*t+cx)*t, sy=t=>((ay*t+by)*t+cy)*t;
+  return x=>{if(x<=0)return 0;if(x>=1)return 1;let lo=0,hi=1,t=x;for(let i=0;i<40;i++){const v=sx(t);if(Math.abs(v-x)<1e-6)break;if(v<x)lo=t;else hi=t;t=(lo+hi)/2;}return sy(t);};}
+const E={out:bez(.22,1,.36,1),inOut:bez(.65,0,.35,1),soft:bez(.4,0,.2,1),back:bez(.34,1.4,.64,1),lin:x=>x};
+const P=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const L=(a,b,u)=>a+(b-a)*u;
+const $=id=>document.getElementById(id);
+const win2=(t,a,b,fi=.3,fo=.3)=>Math.min(E.soft(P(t,a,a+fi)),1-E.soft(P(t,b-fo,b)));   // visible window with fades
+const pop=(el,t,a,b,dy=26,fi=.4,fo=.3)=>{const ui=E.out(P(t,a,a+fi)),uo=E.soft(P(t,b-fo,b));el.style.opacity=Math.min(ui,1-uo);el.style.transform=`translateY(${dy*(1-ui)-dy*.6*uo}px)`;return ui;};
+
+/* ---------------- corner pin ---------------- */
+function adj(m){return[m[4]*m[8]-m[5]*m[7],m[2]*m[7]-m[1]*m[8],m[1]*m[5]-m[2]*m[4],m[5]*m[6]-m[3]*m[8],m[0]*m[8]-m[2]*m[6],m[2]*m[3]-m[0]*m[5],m[3]*m[7]-m[4]*m[6],m[1]*m[6]-m[0]*m[7],m[0]*m[4]-m[1]*m[3]];}
+function mm(a,b){const c=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++){let s=0;for(let k=0;k<3;k++)s+=a[3*i+k]*b[3*k+j];c[3*i+j]=s;}return c;}
+function mv(m,v){return[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];}
+function b2p(x1,y1,x2,y2,x3,y3,x4,y4){const m=[x1,x2,x3,y1,y2,y3,1,1,1];const v=mv(adj(m),[x4,y4,1]);return mm(m,[v[0],0,0,0,v[1],0,0,0,v[2]]);}
+function homog(w,h,q){const t=mm(b2p(...q),adj(b2p(0,0,w,0,0,h,w,h)));for(let i=0;i<9;i++)t[i]/=t[8];return t;}
+function css3d(t){return`matrix3d(${[t[0],t[3],0,t[6],t[1],t[4],0,t[7],0,0,1,0,t[2],t[5],0,t[8]].join(',')})`;}
+function proj(H,x,y){const v=mv(H,[x,y,1]);return[v[0]/v[2],v[1]/v[2]];}
+
+/* ---------------- geometry ---------------- */
+const SW=1080, SH=1350;
+const WW=1440, WH=900, S0=1000/1440;
+const FX=40, FY=380;
+const FLAT=[FX,FY, FX+1000,FY, FX,FY+625, FX+1000,FY+625];
+const SCREEN=[886,191, 1673,249, 839,679, 1614,779];
+const O=[1253,475], OS=[535,598], BASE=1.265;
+const heroInWin={x:28,y:88+84,w:1384,h:500,r:22};
+const SCROLL=459;
+function cover(vid,fx,fy,k){const sc=1.25*k;let tx=540-sc*fx,ty=675-sc*fy;tx=Math.min(0,Math.max(SW-1920*sc,tx));ty=Math.min(0,Math.max(SH-1080*sc,ty));vid.style.transform=`translate(${tx}px,${ty}px) scale(${sc})`;}
+
+/* ---------------- videos: time mapping + when they need seeking ---------------- */
+const C=(v,a,b)=>Math.min(b,Math.max(a,v));
+const VIDS=[
+  {el:$('vBlur'),     map:t=>C(t,0,5.0),                 on:t=>t<3.6},
+  {el:$('vHero'),     map:t=>C(t,0,5.0),                 on:t=>t<6.2},
+  {el:$('vHeroFull'), map:t=>C(t,0,5.0),                 on:t=>t<1.3},
+  {el:$('vShop'),     map:t=>t<20?C(t-2.85+0.07,0.07,3.28):C((t-32)*0.75+0.07,0.07,3.28), on:t=>(t>2.7&&t<6.2)||(t>31.7&&t<36.5)},
+  {el:$('vBoxes'),    map:t=>C(t-6.0,0,6.95),           on:t=>t>5.7&&t<18.2},
+  {el:$('vLivBg'),    map:t=>C((t-17.9)*0.35,0,5.0),     on:t=>t>17.8&&t<32.3},
+  {el:$('vProfile'),  map:t=>0.04,                       on:t=>false},
+  {el:$('vSmile'),    map:t=>C(t-36.3,0,5.7),            on:t=>t>36.0&&t<42.3},
+];
+
+/* ---------------- on-screen copy cards ---------------- */
+const CARDS=[
+  {in:1.0,  out:6.0,  lines:[{t:'AI recommendations.',at:1.12},{t:'A more [personal] experience?',at:3.55}]},
+  {in:9.15, out:13.0, lines:[{t:'[Too large] for their space.',at:9.3},{t:'[Beyond] their budget.',at:11.45}]},
+  {in:13.75,out:17.95,lines:[{t:'Browsing activity is [only part] of the picture.',at:13.9}]},
+  {in:20.1, out:23.95,lines:[{t:'What would [help] this customer choose?',at:20.25}]},
+  {in:24.45,out:31.95,lines:[{t:'Understand their [requirements].',at:24.6},{t:'Make product information [dependable].',at:27.7}]},
+  {in:34.45,out:41.85,lines:[{t:'Build it.',at:34.6},{t:'Test its [usefulness].',at:36.5}]},
+];
+(function buildCards(){
+  const host=$('cards');
+  CARDS.forEach((c,ci)=>{
+    const el=document.createElement('div');el.className='copy';host.appendChild(el);c.el=el;
+    c.lines.forEach((ln,li)=>{
+      const wrap=document.createElement('div');wrap.className='lnw';
+      const d=document.createElement('div');d.className='ln';if(li>0)d.style.paddingTop='8px';
+      let hl=false;
+      ln.t.split(' ').forEach((word,wi)=>{
+        if(word.startsWith('[')){hl=true;word=word.slice(1);}
+        let end=false;if(word.includes(']')){end=true;word=word.replace(']','');}
+        const w=document.createElement('span');w.className='w';
+        const inner=document.createElement('span');inner.className='wi'+(hl?' hlw':'');
+        if(hl){const m=document.createElement('i');m.className='mark';inner.appendChild(m);}
+        inner.appendChild(document.createTextNode(word));w.appendChild(inner);d.appendChild(w);d.appendChild(document.createTextNode(' '));
+        if(end)hl=false;
+      });
+      wrap.appendChild(d);el.appendChild(wrap);
+      ln.wrap=wrap;ln.d=d;ln.words=[...d.querySelectorAll('.wi')];ln.marks=[...d.querySelectorAll('.mark')];
+    });
+  });
+})();
+function mix(a,b,u){return a.map((v,i)=>Math.round(v+(b[i]-v)*u));}
+function renderCards(t){
+  CARDS.forEach(c=>{
+    const live=t>c.in-0.05&&t<c.out+0.05;
+    c.el.style.display=live?'block':'none';if(!live)return;
+    const ui=E.out(P(t,c.in,c.in+0.45)), uo=E.soft(P(t,c.out-0.32,c.out));
+    c.el.style.opacity=Math.min(ui,1-uo);
+    c.el.style.transform=`translateY(${26*(1-ui)-18*uo}px) scale(${L(.97,1,ui)})`;
+    c.lines.forEach((ln,li)=>{
+      if(li>0){const u=E.inOut(P(t,ln.at-0.15,ln.at+0.3));ln.wrap.style.height=(ln.h*u)+'px';}
+      ln.words.forEach((w,wi)=>{const u=E.out(P(t,ln.at+0.08*wi,ln.at+0.08*wi+0.55));w.style.transform=`translateY(${115*(1-u)}%)`;});
+      const ma=ln.at+0.08*ln.words.length+0.25;
+      ln.marks.forEach((m,mi)=>{m.style.transform=`scaleX(${E.inOut(P(t,ma+0.12*mi,ma+0.12*mi+0.4))})`;});
+      const next=c.lines[li+1];
+      const ud=next?E.soft(P(t,next.at-0.1,next.at+0.35)):0;
+      ln.d.style.color=`rgb(${mix([16,14,20],[138,138,150],ud).join(',')})`;
+    });
+  });
+}
+
+const s1cards=[0,1,2].map(i=>{const c=$('c'+i);return{c,sk:c.querySelector('.sk'),img:c.querySelector('img'),skl:[...c.querySelectorAll('.skl')],txt:c.querySelector('.txt'),heart:c.querySelector('.heart')};});
+const ROWS=[...document.querySelectorAll('#records tr')].slice(1).map(r=>({cells:[...r.querySelectorAll('.cell')]}));
+
+/* ================= RENDER ================= */
+function render(t){
+  renderCards(t);
+
+  /* ---------- SCENE 1 (0–6): storefront → laptop ---------- */
+  const s1=t<6.3;
+  const uZ=E.inOut(P(t,0.25,1.15));
+  const hx=FX+heroInWin.x*S0, hy=FY+heroInWin.y*S0, hw=heroInWin.w*S0, hh=heroInWin.h*S0, hr=heroInWin.r*S0;
+  const hf=$('heroFull');
+  hf.style.left=L(0,hx,uZ)+'px'; hf.style.top=L(0,hy,uZ)+'px'; hf.style.width=L(SW,hw,uZ)+'px'; hf.style.height=L(SH,hh,uZ)+'px';
+  hf.style.borderRadius=L(0,hr,uZ)+'px'; hf.style.opacity=t<1.16?1:0;
+
+  // laptop / shopper plate (scene 1 and scene 6)
+  const inS6=t>=20;
+  let S;
+  if(!inS6){ if(t<2.85)S=1.08; else if(t<3.5)S=L(1.08,1.0,E.out(P(t,2.85,3.5))); else S=L(1.0,1.006,E.soft(P(t,3.5,6.0))); }
+  else { S=L(1.0,1.012,E.soft(P(t,32,36.3))); }
+  const sc=BASE*S, TX=OS[0]-sc*O[0], TY=OS[1]-sc*O[1];
+  $('vShop').style.transform=`translate(${TX}px,${TY}px) scale(${sc})`;
+  const Q=SCREEN.map((v,i)=>i%2===0?TX+sc*v:TY+sc*v);
+  const uPin=inS6?1:E.inOut(P(t,2.85,3.5));
+  const Cq=FLAT.map((v,i)=>L(v,Q[i],uPin));
+  const H=homog(WW,WH,Cq), M=css3d(H);
+  const win=$('win'), ws=$('winShadow');
+  win.style.transform=M; ws.style.transform=M;
+  const winOp=inS6? win2(t,31.85,36.3,.3,.15) : Math.min(E.soft(P(t,0.5,1.0)),1-E.soft(P(t,5.85,6.1)));
+  win.style.opacity=winOp; win.style.visibility=winOp>0?'visible':'hidden';
+  ws.style.opacity=inS6?0:E.soft(P(t,0.6,1.1))*(1-uPin)*winOp;
+  const rad=L(18,4,uPin); win.style.borderRadius=rad+'px'; ws.style.borderRadius=rad+'px';
+  $('glare').style.opacity=uPin*0.55; $('dim').style.opacity=uPin*0.06;
+  $('shopWrap').style.opacity=inS6? win2(t,31.85,36.3,.3,.15) : Math.min(E.soft(P(t,2.85,3.2)),1-E.soft(P(t,5.85,6.1)));
+  const bo=1-E.soft(P(t,2.95,3.35));
+  $('vBlur').style.opacity=bo; $('veil').style.opacity=bo;
+  $('page').style.display=inS6?'none':'block'; $('page2').style.display=inS6?'block':'none'; $('page2').style.opacity=1;
+  $('omniPath').textContent=inS6?'/sofas?fit=my-space':'/living-room';
+
+  if(!inS6){
+    $('page').style.transform=`translateY(${-SCROLL*E.inOut(P(t,1.15,1.95))}px)`;
+    const uh=E.out(P(t,1.3,1.75)); $('recHead').style.opacity=uh; $('recHead').style.transform=`translateY(${18*(1-uh)}px)`;
+    const us=E.out(P(t,1.4,1.85)); $('recSub').style.opacity=us; $('recSub').style.transform=`translateY(${14*(1-us)}px)`;
+    $('spark').style.transform=`rotate(${t*60}deg) scale(${1+0.18*Math.sin(Math.PI*P(t,1.35,1.9))})`;
+    $('glint').style.left=L(-80,330,E.inOut(P(t,2.0,2.7)))+'px';
+    const sh=((t*0.9)%1);
+    s1cards.forEach((k,i)=>{const a=1.45+0.08*i,b=1.95+0.1*i;const ua=E.out(P(t,a,a+0.4)),ub=E.soft(P(t,b,b+0.35));
+      k.c.style.opacity=ua;k.c.style.transform=`translateY(${26*(1-ua)}px)`;
+      k.sk.style.backgroundPosition=`${100-sh*200}% 0`;k.sk.style.opacity=1-ub;k.skl.forEach(s=>{s.style.backgroundPosition=`${100-sh*200}% 0`;s.style.opacity=1-ub;});
+      k.img.style.opacity=ub;k.img.style.transform=`scale(${L(1.05,1,ub)})`;k.txt.style.opacity=ub;k.heart.style.opacity=ub;});
+    const uc=E.inOut(P(t,3.85,5.0));
+    const cx=L(1100,262,uc), cy=L(770,474,uc)-70*Math.sin(Math.PI*uc);
+    const click=P(t,5.55,5.75);
+    $('cursor').style.opacity=E.out(P(t,3.7,3.95));
+    $('cursor').style.transform=`translate(${cx-4}px,${cy-3}px) scale(${1-0.14*Math.sin(Math.PI*click)})`;
+    const uhv=E.out(P(t,4.95,5.3)), c0=s1cards[0];
+    c0.c.style.transform=`translateY(${-8*uhv}px)`; c0.c.style.boxShadow=`0 ${18*uhv}px ${40*uhv}px rgba(31,29,26,${0.16*uhv})`;
+    c0.img.style.transform=`scale(${1+0.04*uhv})`;
+    $('qv').style.opacity=uhv; $('qv').style.transform=`translateX(-50%) translateY(${10*(1-uhv)}px)`;
+    const ur=P(t,5.58,6.0), rp=$('ripple'); rp.style.opacity=ur>0&&ur<1?0.7*(1-ur):0;
+    const rr=L(6,70,E.out(ur)); rp.style.width=rp.style.height=rr*2+'px'; rp.style.transform=`translate(${262-rr}px,${474-rr}px)`;
+  } else {
+    // scene 6 improved page: cursor ticks compare boxes, tray slides up
+    rpHide();
+    const c1=E.inOut(P(t,33.6,34.2)), c2=E.inOut(P(t,34.45,34.95));
+    let cx,cy;
+    if(t<34.45){cx=L(820,630,c1);cy=L(720,370,c1);} else {cx=L(630,1336,c2);cy=L(370,370,c2);}
+    $('cursor').style.opacity=E.out(P(t,33.3,33.6))*(1-E.soft(P(t,35.9,36.2)));
+    const k1=P(t,34.2,34.35),k2=P(t,34.95,35.1);
+    $('cursor').style.transform=`translate(${cx-4}px,${cy-3}px) scale(${1-0.14*Math.sin(Math.PI*Math.max(k1>0&&k1<1?k1:0,k2>0&&k2<1?k2:0))})`;
+    $('cb0').style.background=t>34.3?'#1f1d1a':'#fff'; $('cb1').style.background=t>35.05?'#1f1d1a':'#fff';
+    $('tray').style.transform=`translateY(${100*(1-E.out(P(t,35.35,35.85)))}%)`;
+  }
+
+  /* ---------- SCENE 2 (6–13): small apartment → too large, beyond budget ---------- */
+  const s23 = t>5.7 && t<18.3;
+  $('boxWrap').style.display=s23?'block':'none';
+  if(s23){
+    $('boxWrap').style.opacity=Math.min(E.soft(P(t,5.85,6.15)),1-E.soft(P(t,17.85,18.1)));
+    cover($('vBoxes'),960,560,1+0.06*E.soft(P(t,6,13)));
+    $('vBoxes').style.filter=`blur(${14*E.soft(P(t,12.9,13.5))}px)`;
+    $('boxDim').style.opacity=0.38*E.soft(P(t,7.9,8.4))*(1-E.soft(P(t,12.9,13.4)));
+    $('boxVeil').style.opacity=E.soft(P(t,12.9,13.5));
+  }
+  // product sheet A (corner sofa)
+  const pa=$('pdpA');
+  const ina=E.out(P(t,7.95,8.5)), outa=E.inOut(P(t,10.85,11.35));
+  pa.style.opacity=t>7.9&&t<11.4?1:0;
+  pa.style.transform=`translate(${-1100*outa}px,${260*(1-ina)}px)`;
+  $('tabU').style.transform=`scaleX(${E.out(P(t,8.85,9.1))})`;
+  const ud=E.out(P(t,8.95,9.25)); $('dimsA').style.opacity=ud;
+  $('mbarA').style.opacity=E.out(P(t,9.05,9.35)); $('mbarA').style.transform=`scaleX(${L(.6,1,E.out(P(t,9.05,9.45)))})`;
+  const b1=E.out(P(t,9.25,9.7)), b2=E.out(P(t,9.45,9.9)), o1=E.out(P(t,9.85,10.3));
+  $('cmpA').style.opacity=E.soft(P(t,9.2,9.4));
+  $('barA1').style.transform=`scaleX(${b1})`; $('barA2').style.transform=`scaleX(${b2})`;
+  $('ovA').style.transform=`scaleX(${o1})`; $('ovA').style.opacity=o1;
+  // cursor taps "Dimensions"
+  const c2=$('cur2'); const cu=E.inOut(P(t,8.35,8.85));
+  c2.style.opacity=t>8.3&&t<9.4?E.out(P(t,8.3,8.45))*(1-E.soft(P(t,9.2,9.4))):0;
+  const ck=P(t,8.85,9.0);
+  c2.style.transform=`translate(${L(720,250,cu)}px,${L(1240,890,cu)}px) scale(${1-0.15*Math.sin(Math.PI*ck)})`;
+  // product sheet B (dining set)
+  const pb=$('pdpB');
+  const inb=E.inOut(P(t,10.85,11.35));
+  const fb=E.inOut(P(t,12.9,13.35));
+  pb.style.opacity=t>10.8&&t<13.4?1-fb:0;
+  pb.style.transform=`translate(${1100*(1-inb)}px,0) scale(${1-0.08*fb})`;
+  const bb1=E.out(P(t,11.45,11.9)), bb2=E.out(P(t,11.65,12.1)), ob=E.out(P(t,12.0,12.45));
+  $('cmpB').style.opacity=E.soft(P(t,11.4,11.6));
+  $('barB1').style.transform=`scaleX(${bb1})`; $('barB2').style.transform=`scaleX(${bb2})`;
+  $('ovB').style.transform=`scaleX(${ob})`; $('ovB').style.opacity=ob;
+  $('priceB').style.color=t>11.45?`rgb(${mix([31,29,26],[216,67,47],E.soft(P(t,11.45,11.8))).join(',')})`:'#1f1d1a';
+
+  /* ---------- SCENE 3 (13–18): freeze; known signal vs missing context ---------- */
+  const fz=$('frozen');
+  const fi=E.out(P(t,13.1,13.55)), fo=E.soft(P(t,17.7,18.0));
+  fz.style.opacity=t>13&&t<18.1?Math.min(fi,1-fo):0;
+  fz.style.transform=`scale(${L(.94,1,fi)})`;
+  const gray=E.soft(P(t,13.55,13.9));
+  $('ftiles').style.filter=`grayscale(${gray}) contrast(${1-0.08*gray})`;
+  $('pause').style.opacity=E.out(P(t,13.6,13.85)); $('pause').style.transform=`scale(${L(.6,1,E.back(P(t,13.6,13.9)))})`;
+  const sk=E.back(P(t,14.6,15.0)), su1=E.out(P(t,15.7,16.1)), su2=E.out(P(t,16.0,16.4));
+  const chOut=E.soft(P(t,17.7,18.0));
+  [['chK',sk,14.6],['chU1',su1,15.7],['chU2',su2,16.0]].forEach(([id,u,a])=>{const el=$(id);el.style.opacity=t>a?Math.min(1,u*1.5)*(1-chOut):0;el.style.transform=`translateY(${30*(1-u)}px)`;});
+  const wk=E.inOut(P(t,14.9,15.4));
+  $('wK').style.strokeDasharray='200'; $('wK').style.strokeDashoffset=200*(1-wk); $('wK').style.opacity=t>14.9?1-chOut:0;
+  $('wKd').style.opacity=t>15.3?1-chOut:0;
+  $('wU1').style.opacity=E.soft(P(t,16.0,16.3))*(1-chOut); $('wU2').style.opacity=E.soft(P(t,16.3,16.6))*(1-chOut);
+  $('chK').style.boxShadow=`0 0 0 ${10*Math.sin(Math.PI*P(t,15.3,15.9))}px rgba(240,255,112,.8)`;
+
+  /* ---------- SCENE 4 (18–24): UMM intro + annotations ---------- */
+  const wipeIn=E.inOut(P(t,17.85,18.3)), wipeOut=E.inOut(P(t,19.05,19.5));
+  const iw=$('inkWipe');
+  iw.style.display=t>17.8&&t<19.55?'block':'none';
+  iw.style.clipPath=`inset(${100*(1-wipeIn)}% 0 ${100*wipeOut}% 0)`;
+  const lg=E.out(P(t,18.2,18.75));
+  $('introLogo').style.opacity=lg*(1-E.soft(P(t,18.95,19.15)));
+  $('introLogo').style.transform=`translate(-50%,-50%) scale(${L(.9,1,lg)})`;
+  const s45=t>17.8&&t<32.3;
+  $('livWrap').style.display=s45?'block':'none';
+  if(s45){ $('livWrap').style.opacity=Math.min(t>18.25?1:0,1-E.soft(P(t,31.9,32.2))); cover($('vLivBg'),960,540,1.4); }
+  const an=$('ann'); const ai=E.out(P(t,19.4,19.9)), ao=E.soft(P(t,23.7,24.0));
+  an.style.opacity=t>19.3&&t<24.1?Math.min(ai,1-ao):0; an.style.transform=`translateY(${30*(1-ai)}px)`;
+  [['a1','m1',20.75],['a2','m2',21.4],['a3','m3',22.05],['a4','m4',22.7]].forEach(([r,m,a])=>{
+    const u=E.out(P(t,a,a+0.45)); const re=$(r);
+    re.style.opacity=t>a&&t<24.1?Math.min(u,1-ao):0; re.style.transform=`translateX(${40*(1-u)}px)`;
+    const mu=E.back(P(t,a,a+0.4)); const me=$(m); me.style.opacity=t>a?Math.min(1,mu*1.4)*(1-ao):0; me.style.transform=`scale(${L(.4,1,mu)})`;
+  });
+
+  /* ---------- SCENE 5 (24–32): requirements + dependable data ---------- */
+  const pf=$('pref');
+  const pi=E.out(P(t,24.15,24.65)), po=E.soft(P(t,31.7,32.0)), pm=E.inOut(P(t,27.35,27.9));
+  pf.style.opacity=t>24.1&&t<32.1?Math.min(pi,1-po):0;
+  pf.style.transform=`translateY(${30*(1-pi)+ 52*pm}px) scale(${L(1,.86,pm)})`;
+  const sl=E.inOut(P(t,25.0,25.9)), pct=L(100,36,sl);
+  $('sfill').style.width=pct+'%'; $('sknob').style.left=pct+'%';
+  $('budgetVal').textContent=t<25.0?'Any':'Up to £'+(Math.round(L(3000,1300,sl)/50)*50).toLocaleString('en-GB');
+  $('segOn').style.opacity=E.soft(P(t,26.45,26.65));
+  const c5=$('cur5');
+  c5.style.opacity=t>24.7&&t<27.3?E.out(P(t,24.7,24.85))*(1-E.soft(P(t,27.0,27.3))):0;
+  let x5,y5;
+  if(t<25.0){x5=984;y5=458;} else if(t<25.9){x5=L(984,410,sl);y5=458;} else {const u=E.inOut(P(t,25.95,26.45));x5=L(410,536,u);y5=L(458,556,u);}
+  const tap=P(t,26.45,26.6);
+  c5.style.transform=`translate(${x5}px,${y5}px) scale(${1-0.15*Math.sin(Math.PI*tap)})`;
+  const rc=$('records');
+  const ri=E.out(P(t,27.75,28.25));
+  rc.style.opacity=t>27.7&&t<32.1?Math.min(ri,1-po):0; rc.style.transform=`translateY(${40*(1-ri)}px)`;
+  ROWS.forEach((r,ri2)=>{r.cells.forEach((cell,ci)=>{const a=28.6+0.35*ri2+0.18*ci;const u=E.soft(P(t,a,a+0.35));
+    cell.children[0].style.opacity=1-u; cell.children[1].style.opacity=u; cell.children[1].style.transform=`translateY(${-50+30*(1-u)}%)`;});});
+
+  /* ---------- SCENE 6 (32–42): proposed experience + usability test ---------- */
+  // explanation chips with leader lines to the cards on the laptop screen
+  const lt=[[$('bc1'),32.7,'ld1',[145,721]],[$('bc2'),33.25,'ld2',[372,721]]];
+  lt.forEach(([el,a,ld,pt])=>{
+    const u=E.back(P(t,a,a+0.45)), out=E.soft(P(t,35.15,35.45));
+    el.style.opacity=t>a&&t<35.5?Math.min(1,u*1.3)*(1-out):0; el.style.transform=`translateX(${-60*(1-E.out(P(t,a,a+0.45)))}px)`;
+    const [px,py]=proj(H,pt[0],pt[1]);
+    const r=el.getBoundingClientRect?null:null;
+    const ax=60+el.offsetWidth-30, ay=el.offsetTop+0;
+    const lu=E.inOut(P(t,a+0.2,a+0.6));
+    const ex=L(ax,px,lu), ey=L(ay,py,lu);
+    $(ld).setAttribute('d',`M${ax} ${ay} L${ex} ${ey}`); $(ld).style.opacity=t>a&&t<35.5?(1-out):0;
+    $(ld+'d').setAttribute('cx',ex); $(ld+'d').setAttribute('cy',ey); $(ld+'d').style.opacity=t>a+0.55&&t<35.5?(1-out):0;
+  });
+  // usability test plates
+  const pw=$('profWrap'), smw=$('smileWrap');
+  pw.style.display='none'; smw.style.display=t>36.0&&t<42.3?'block':'none';
+  pw.style.opacity=E.soft(P(t,36.2,36.45)); cover($('vProfile'),470,470,1.02+0.02*P(t,36.3,39.2));
+  smw.style.opacity=E.soft(P(t,36.2,36.45)); cover($('vSmile'),L(1060,990,E.soft(P(t,36.3,42))),500,L(1.16,1.04,E.soft(P(t,36.3,42))));
+  const hr2=win2(t,36.55,41.85,.35,.3), ht=win2(t,36.75,41.85,.4,.3);
+  $('hudRec').style.opacity=hr2; $('hudTask').style.opacity=ht; $('hudTask').style.transform=`translateY(${30*(1-E.out(P(t,36.75,37.15)))}px)`;
+  $('hudRec').querySelector('i').style.opacity=0.35+0.65*(Math.sin(t*6)>0?1:0);
+  const done=E.soft(P(t,39.9,40.2));
+  $('taskTick').style.opacity=done; $('taskTick').style.transform=`scale(${L(.5,1,E.back(P(t,39.9,40.25)))})`;
+  $('stProg').style.opacity=1-done; $('stDone').style.opacity=done;
+
+  /* ---------- SCENE 7 (42–50): pull back → UMM end card ---------- */
+  const en=$('end');
+  en.style.display=t>41.7?'block':'none';
+  en.style.opacity=E.soft(P(t,41.75,42.05));
+  const ep=$('endPanel'); const pb2=E.inOut(P(t,42.1,43.5));
+  ep.style.opacity=t<43.6?Math.min(E.soft(P(t,41.75,41.95)),1-E.soft(P(t,42.9,43.5))):0;
+  ep.style.transform=`translateY(${-140*pb2}px) scale(${L(1.12,.55,pb2)})`;
+  ['r1','r2','r3'].forEach((id,i)=>{const r=$(id);const u=E.out(P(t,42.4+0.15*i,43.6+0.15*i));r.style.opacity=0.9*u;r.style.transform=`translate(-50%,-50%) scale(${L(.7,1,u)+0.02*Math.sin(t*0.8+i)})`;});
+  renderEnd(t);
+  const ef=E.out(P(t,45.6,46.1)); $('endFoot').style.opacity=ef; $('endFoot').style.transform=`translateY(${20*(1-ef)}px)`;
+  $('endRule').style.transform=`scaleX(${E.inOut(P(t,45.4,46.2))})`;
+
+  /* ---------- logo bug ---------- */
+  const bugOn=Math.max(Math.min(E.out(P(t,0.35,0.9)),1-E.soft(P(t,17.6,17.85))), win2(t,32.05,36.25,.3,.2));
+  $('bug').style.opacity=bugOn; $('bug').style.transform=`translateY(${14*(1-Math.min(1,bugOn))}px)`;
+}
+function rpHide(){$('ripple').style.opacity=0;}
+
+/* end-card copy (built once) */
+const END=[{t:'Planning AI personalisation?',at:42.85},{t:"Let’s build the [foundation].",at:44.75}];
+(function(){const host=$('endTxt');END.forEach((ln,li)=>{const d=document.createElement('div');d.className='ln';if(li>0)d.style.marginTop='18px';let hl=false;
+  ln.t.split(' ').forEach(word=>{if(word.startsWith('[')){hl=true;word=word.slice(1);}let e=false;if(word.includes(']')){e=true;word=word.replace(']','');}
+    const w=document.createElement('span');w.className='w';const i=document.createElement('span');i.className='wi'+(hl?' hlw':'');
+    if(hl){const m=document.createElement('i');m.className='mark';i.appendChild(m);i.style.color='#100e14';}
+    i.appendChild(document.createTextNode(word));w.appendChild(i);d.appendChild(w);d.appendChild(document.createTextNode(' '));if(e)hl=false;});
+  host.appendChild(d);ln.words=[...d.querySelectorAll('.wi')];ln.marks=[...d.querySelectorAll('.mark')];});})();
+function renderEnd(t){END.forEach(ln=>{ln.words.forEach((w,wi)=>{const u=E.out(P(t,ln.at+0.09*wi,ln.at+0.09*wi+0.6));w.style.transform=`translateY(${115*(1-u)}%)`;});
+  const ma=ln.at+0.09*ln.words.length+0.2;ln.marks.forEach(m=>{m.style.transform=`scaleX(${E.inOut(P(t,ma,ma+0.45))})`;});});}
+
+/* ---------------- playback / render harness ---------------- */
+const params=new URLSearchParams(location.search);
+const RENDER=params.has('render');
+function fit(){const s=RENDER?1:Math.min(innerWidth/SW,innerHeight/SH);const st=$('stage');st.style.transform=`scale(${s})`;st.style.left=RENDER?'0px':((innerWidth-SW*s)/2)+'px';st.style.top=RENDER?'0px':((innerHeight-SH*s)/2)+'px';}
+addEventListener('resize',fit);
+window.__size={w:SW,h:SH};
+function seekVideo(v,time){return new Promise(res=>{if(Math.abs(v.currentTime-time)<0.0005){res();return;}
+  const done=()=>{v.removeEventListener('seeked',done);res();};v.addEventListener('seeked',done);v.currentTime=time;});}
+window.__seek=async t=>{await Promise.all(VIDS.filter(o=>o.on(t)).map(o=>seekVideo(o.el,o.map(t))));render(t);
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return true;};
+window.__ready=(async()=>{
+  await document.fonts.ready;
+  await Promise.all(VIDS.map(o=>o.el.readyState>=2?0:new Promise(r=>o.el.addEventListener('loadeddata',r,{once:true}))));
+  await Promise.all([...document.images].map(i=>i.complete?0:new Promise(r=>i.onload=i.onerror=r)));
+  CARDS.forEach(c=>{c.el.style.display='block';c.lines.forEach(ln=>{ln.h=ln.d.offsetHeight;});});
+  VIDS.forEach(o=>o.el.pause());
+  fit(); render(0); return true;
+})();
+if(!RENDER){
+  let t0=null;
+  window.__ready.then(()=>{fit();t0=performance.now();VIDS.forEach(o=>{o.el.currentTime=o.map(0);});
+    (function loop(){let t=((performance.now()-t0)/1000)%(DURATION+1);const tt=Math.min(t,DURATION);
+      VIDS.forEach(o=>{const vt=o.map(tt);if(o.on(tt)){if(Math.abs(o.el.currentTime-vt)>0.15)o.el.currentTime=vt;if(o.el.paused)o.el.play().catch(()=>{});}else if(!o.el.paused)o.el.pause();});
+      render(tt);requestAnimationFrame(loop);})();});
+}
+</script>
+</body>
+</html>

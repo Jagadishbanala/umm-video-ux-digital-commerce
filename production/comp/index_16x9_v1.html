@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>UMM · Making AI Personalisation Useful · Comp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:"Mosvita";src:url("../assets/brand/Mosvita-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+@font-face{font-family:"Mosvita";src:url("../assets/brand/Mosvita-Medium.ttf") format("truetype");font-weight:500;font-display:block}
+@font-face{font-family:"Mosvita";src:url("../assets/brand/Mosvita-SemiBold.ttf") format("truetype");font-weight:600;font-display:block}
+@font-face{font-family:"AeonikPro";src:url("../assets/brand/AeonikPro-Regular.ttf") format("truetype");font-weight:400;font-display:block}
+
+/* UMM brand tokens (from umm.digital) + a neutral fictional retailer palette for the in-video storefront */
+:root{
+  --umm-ink:#100e14; --umm-ink-soft:#41414d; --umm-ink-quiet:#8a8a96; --umm-paper:#ffffff;
+  --umm-citrus:#f0ff70; --umm-violet:#7b5cff; --umm-lilac:#dccfff;
+  --store-bg:#fbfaf7; --store-ink:#1f1d1a; --store-muted:#76716a; --store-line:#e9e5de; --store-tile:#f2efea; --store-green:#2e4636;
+  --chrome:#eceef1; --chrome-2:#ffffff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0b0a0d;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;transform-origin:0 0;background:#e7e4df;font-family:Inter,system-ui,sans-serif}
+.fill{position:absolute;inset:0;width:100%;height:100%}
+video{display:block}
+#vBlur{object-fit:cover}
+#veil{background:radial-gradient(120% 90% at 30% 50%, rgba(246,244,240,.55), rgba(236,232,226,.35))}
+#shopWrap{transform-origin:0 0;opacity:0}
+#shopWrap video{width:1920px;height:1080px;object-fit:cover}
+
+/* ---------- browser window (1440x900 internal, corner-pinned with matrix3d) ---------- */
+#win{position:absolute;left:0;top:0;width:1440px;height:900px;transform-origin:0 0;border-radius:18px;overflow:hidden;background:var(--store-bg);opacity:0;backface-visibility:hidden}
+#winShadow{position:absolute;left:0;top:0;width:1440px;height:900px;transform-origin:0 0;border-radius:18px;box-shadow:0 60px 120px rgba(16,14,20,.28),0 12px 30px rgba(16,14,20,.14);opacity:0}
+.chrome{position:absolute;left:0;top:0;right:0;height:88px;background:var(--chrome);border-bottom:1px solid #dcdfe4}
+.tabs{height:42px;display:flex;align-items:flex-end;padding-left:18px;gap:10px}
+.dots{display:flex;gap:9px;align-self:center;margin-right:14px}
+.dots i{width:13px;height:13px;border-radius:50%;display:block;background:#ff5f57}
+.dots i:nth-child(2){background:#febc2e}.dots i:nth-child(3){background:#28c840}
+.tab{height:34px;width:300px;background:var(--chrome-2);border-radius:10px 10px 0 0;display:flex;align-items:center;gap:9px;padding:0 14px;font-size:13.5px;color:#3c4043;white-space:nowrap;overflow:hidden}
+.fav{width:16px;height:16px;border-radius:4px;background:var(--store-green);display:grid;place-items:center;color:#fff;font:600 10px/1 Fraunces,serif}
+.tab .x{margin-left:auto;color:#8a8f96}
+.plus{color:#5f6368;font-size:20px;align-self:center}
+.toolbar{height:46px;background:var(--chrome-2);display:flex;align-items:center;gap:16px;padding:0 16px;color:#5f6368;font-size:18px}
+.omni{flex:1;height:32px;border-radius:16px;background:#f1f3f4;display:flex;align-items:center;gap:10px;padding:0 16px;font-size:14px;color:#202124}
+.omni b{font-weight:400;color:#6b7075}
+.vp{position:absolute;left:0;top:88px;width:1440px;height:812px;overflow:hidden;background:var(--store-bg)}
+#page{position:absolute;left:0;top:0;width:1440px;will-change:transform}
+.site-h{height:76px;display:flex;align-items:center;gap:40px;padding:0 36px;border-bottom:1px solid var(--store-line);background:var(--store-bg)}
+.logo{font:600 30px/1 Fraunces,Georgia,serif;letter-spacing:-.02em;color:var(--store-ink)}
+.site-h nav{display:flex;gap:28px;font-size:15px;color:var(--store-ink);font-weight:500}
+.site-h nav span:last-child{color:#b5452f}
+.search{margin-left:auto;width:300px;height:40px;border-radius:20px;border:1px solid var(--store-line);background:#fff;display:flex;align-items:center;padding:0 16px;gap:10px;color:var(--store-muted);font-size:14px}
+.icons{display:flex;gap:18px;color:var(--store-ink)}
+.icons svg{width:22px;height:22px}
+.hero{position:absolute;left:28px;top:84px;width:1384px;height:500px;border-radius:22px;overflow:hidden;background:#cfc8bf}
+.hero video{width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,16,12,.42),rgba(20,16,12,0) 55%)}
+.hero-copy{position:absolute;left:56px;bottom:56px;z-index:2;color:#fff}
+.hero-copy .eb{font-size:13px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;opacity:.92}
+.hero-copy h2{font:500 56px/1.02 Fraunces,Georgia,serif;letter-spacing:-.02em;margin:12px 0 22px;max-width:560px}
+.btn{display:inline-flex;height:46px;align-items:center;padding:0 24px;border-radius:23px;background:#fff;color:var(--store-ink);font-size:15px;font-weight:600}
+#recs{position:absolute;left:28px;top:624px;width:1384px}
+.rec-head{display:flex;align-items:center;gap:16px}
+.rec-head h3{margin:0;font:600 28px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:var(--store-ink);display:flex;align-items:center;gap:12px}
+.spark{width:26px;height:26px;color:var(--umm-violet)}
+.ai-pill{height:30px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:15px;background:#eee9ff;color:#4a39b8;font-size:13.5px;font-weight:600;position:relative;overflow:hidden}
+.ai-pill .glint{position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);left:-80px}
+.see{margin-left:auto;font-size:15px;font-weight:500;color:var(--store-ink);text-decoration:underline;text-underline-offset:4px}
+.rec-sub{margin:8px 0 0;font-size:15px;color:var(--store-muted)}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:24px}
+.card{position:relative;border-radius:16px;background:#fff;border:1px solid var(--store-line);overflow:visible}
+.card .img{position:relative;height:300px;border-radius:15px 15px 0 0;overflow:hidden;background:var(--store-tile)}
+.card .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .img img.contain{object-fit:contain;padding:22px;background:#fff}
+.sk,.skl{background:linear-gradient(100deg,#ece8e2 20%,#f7f5f1 40%,#ece8e2 60%);background-size:300% 100%}
+.sk{position:absolute;inset:0}
+.meta{padding:16px 18px 18px;position:relative;height:88px}
+.meta .name{font-size:16.5px;font-weight:500;color:var(--store-ink)}
+.meta .price{font-size:17px;font-weight:600;color:var(--store-ink);margin-top:8px;font-variant-numeric:tabular-nums}
+.meta .skl{position:absolute;left:18px;height:14px;border-radius:7px}
+.heart{position:absolute;right:14px;top:14px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;z-index:2}
+.heart svg{width:18px;height:18px}
+.qv{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);height:38px;padding:0 18px;border-radius:19px;background:var(--store-ink);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;white-space:nowrap;z-index:3;opacity:0}
+#cursor{position:absolute;left:0;top:0;width:34px;height:34px;opacity:0;z-index:20;transform-origin:4px 3px}
+#ripple{position:absolute;left:0;top:0;width:10px;height:10px;border-radius:50%;border:3px solid rgba(46,70,54,.9);opacity:0;z-index:19}
+.glare{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.0) 35%,rgba(255,255,255,.22) 50%,rgba(255,255,255,0) 65%);opacity:0;z-index:30;pointer-events:none}
+.dim{position:absolute;inset:0;background:#2a2622;opacity:0;z-index:29;pointer-events:none}
+
+#heroFull{position:absolute;overflow:hidden;z-index:5}
+#heroFull video{position:absolute;left:50%;top:50%;width:100%;height:100%;object-fit:cover;transform:translate(-50%,-50%)}
+
+/* ---------- UMM on-screen copy card ---------- */
+#panel{position:absolute;left:96px;top:356px;width:640px;padding:42px 46px 44px;border-radius:30px;background:rgba(255,255,255,.80);
+  -webkit-backdrop-filter:blur(26px) saturate(1.15);backdrop-filter:blur(26px) saturate(1.15);
+  box-shadow:0 30px 70px rgba(16,14,20,.16),0 2px 0 rgba(255,255,255,.6) inset;z-index:10;opacity:0;font-family:Mosvita,"AeonikPro",sans-serif;transform-origin:0 50%}
+.ln{font-weight:500;font-size:66px;line-height:1.04;letter-spacing:-.035em;color:var(--umm-ink)}
+.w{display:inline-block;overflow:hidden;vertical-align:top;padding:0 8px .14em;margin:0 -8px -.14em}
+.wi{display:inline-block;transform:translateY(115%);position:relative}
+#l2wrap{height:0;overflow:hidden}
+.mark{position:absolute;left:-6px;right:-6px;bottom:.08em;height:.44em;background:var(--umm-citrus);z-index:-1;transform:scaleX(0);transform-origin:0 50%;border-radius:4px}
+.hlw{position:relative;z-index:0}
+#bug{position:absolute;right:64px;top:54px;height:58px;padding:0 24px;border-radius:29px;display:flex;align-items:center;background:rgba(255,255,255,.82);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 10px 30px rgba(16,14,20,.12);z-index:12;opacity:0}
+#bug img{height:22px;width:auto;display:block}
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="vBlur" class="fill" src="../assets/footage/v_living_blur.mp4" muted playsinline preload="auto"></video>
+  <div id="veil" class="fill"></div>
+  <div id="shopWrap" class="fill"><video id="vShop" src="../assets/footage/v_shopper_ots.mp4" muted playsinline preload="auto"></video></div>
+
+  <div id="winShadow"></div>
+  <div id="win">
+    <div class="chrome">
+      <div class="tabs">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <div class="tab"><span class="fav">L</span>Larkfield · Living room furniture<span class="x">×</span></div>
+        <span class="plus">+</span>
+      </div>
+      <div class="toolbar">
+        <span>&#8592;</span><span>&#8594;</span><span>&#8635;</span>
+        <div class="omni"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2.4"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>larkfield.store<b>/living-room</b></div>
+        <span>&#9734;</span><span>&#8942;</span>
+      </div>
+    </div>
+    <div class="vp">
+      <div id="page">
+        <header class="site-h">
+          <div class="logo">Larkfield</div>
+          <nav><span>Living</span><span>Dining</span><span>Bedroom</span><span>Storage</span><span>Outdoor</span><span>Sale</span></nav>
+          <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search sofas, tables, lighting…</div>
+          <div class="icons">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+          </div>
+        </header>
+        <section class="hero">
+          <video id="vHero" src="../assets/footage/v_living.mp4" muted playsinline preload="auto"></video>
+          <div class="hero-copy"><div class="eb">The autumn living edit</div><h2>Make room for slow evenings</h2><span class="btn">Shop living room</span></div>
+        </section>
+        <section id="recs">
+          <div class="rec-head" id="recHead">
+            <h3><svg class="spark" id="spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5c.5 4.9 3.1 8.6 9 10.5-5.9 1.9-8.5 5.6-9 10.5-.5-4.9-3.1-8.6-9-10.5 5.9-1.9 8.5-5.6 9-10.5z"/></svg>Recommended for you</h3>
+            <span class="ai-pill" id="aiPill"><span class="glint" id="glint"></span>New · Personalised with AI</span>
+            <span class="see">See all</span>
+          </div>
+          <p class="rec-sub" id="recSub">Based on what you’ve been browsing</p>
+          <div class="cards">
+            <article class="card" id="c0"><div class="img"><div class="sk"></div><img src="../assets/stock/p_sofa_corner.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span><span class="qv" id="qv">View details</span></div><div class="meta"><div class="skl" style="top:18px;width:70%"></div><div class="skl" style="top:46px;width:34%"></div><div class="txt"><div class="name">Hollis 5-seat corner sofa</div><div class="price">£2,890</div></div></div></article>
+            <article class="card" id="c1"><div class="img"><div class="sk"></div><img class="contain" src="../assets/stock/p_sofa_leather.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span></div><div class="meta"><div class="skl" style="top:18px;width:64%"></div><div class="skl" style="top:46px;width:30%"></div><div class="txt"><div class="name">Aldo 3-seat leather sofa</div><div class="price">£1,249</div></div></div></article>
+            <article class="card" id="c2"><div class="img"><div class="sk"></div><img src="../assets/stock/p_dining.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span></div><div class="meta"><div class="skl" style="top:18px;width:72%"></div><div class="skl" style="top:46px;width:32%"></div><div class="txt"><div class="name">Marlow 8-seat dining set</div><div class="price">£3,450</div></div></div></article>
+            <article class="card" id="c3"><div class="img"><div class="sk"></div><img class="contain" src="../assets/stock/p_armchair.jpg" alt=""><span class="heart"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span></div><div class="meta"><div class="skl" style="top:18px;width:58%"></div><div class="skl" style="top:46px;width:26%"></div><div class="txt"><div class="name">Ines lounge armchair</div><div class="price">£549</div></div></div></article>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div id="ripple"></div>
+    <svg id="cursor" viewBox="0 0 34 34"><path d="M4 3 L4 27 L10.5 21 L15 31 L19.5 29 L15 19.5 L24 19.5 Z" fill="#111" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    <div class="dim" id="dim"></div>
+    <div class="glare" id="glare"></div>
+  </div>
+
+  <div id="heroFull"><video id="vHeroFull" src="../assets/footage/v_living.mp4" muted playsinline preload="auto"></video></div>
+
+  <div id="bug"><img src="../assets/brand/umm-main-logo.svg" alt="UMM — Unified Modern Minds"></div>
+
+  <div id="panel">
+    <div class="ln" id="l1"><span class="w"><span class="wi">AI</span></span> <span class="w"><span class="wi">recommendations.</span></span></div>
+    <div id="l2wrap"><div class="ln" id="l2" style="padding-top:14px"><span class="w"><span class="wi">A</span></span> <span class="w"><span class="wi">more</span></span> <span class="w"><span class="wi hlw"><i class="mark" id="mark"></i>personal</span></span> <span class="w"><span class="wi">experience?</span></span></div></div>
+  </div>
+</div>
+
+<script>
+/* ---------------- timing + easing ---------------- */
+const DURATION = 6.0, FPS = 30;
+function bez(x1,y1,x2,y2){const cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx-bx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy-by;
+  const sx=t=>((ax*t+bx)*t+cx)*t, sy=t=>((ay*t+by)*t+cy)*t;
+  return x=>{if(x<=0)return 0;if(x>=1)return 1;let lo=0,hi=1,t=x;for(let i=0;i<40;i++){const v=sx(t);if(Math.abs(v-x)<1e-6)break;if(v<x)lo=t;else hi=t;t=(lo+hi)/2;}return sy(t);};}
+const E={out:bez(.22,1,.36,1),inOut:bez(.65,0,.35,1),soft:bez(.4,0,.2,1),lin:x=>x};
+const P=(t,a,b)=>Math.min(1,Math.max(0,(t-a)/(b-a)));
+const L=(a,b,u)=>a+(b-a)*u;
+const $=id=>document.getElementById(id);
+
+/* ---------------- corner pin (homography -> matrix3d) ---------------- */
+function adj(m){return[m[4]*m[8]-m[5]*m[7],m[2]*m[7]-m[1]*m[8],m[1]*m[5]-m[2]*m[4],m[5]*m[6]-m[3]*m[8],m[0]*m[8]-m[2]*m[6],m[2]*m[3]-m[0]*m[5],m[3]*m[7]-m[4]*m[6],m[1]*m[6]-m[0]*m[7],m[0]*m[4]-m[1]*m[3]];}
+function mm(a,b){const c=[];for(let i=0;i<3;i++)for(let j=0;j<3;j++){let s=0;for(let k=0;k<3;k++)s+=a[3*i+k]*b[3*k+j];c[3*i+j]=s;}return c;}
+function mv(m,v){return[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];}
+function b2p(x1,y1,x2,y2,x3,y3,x4,y4){const m=[x1,x2,x3,y1,y2,y3,1,1,1];const v=mv(adj(m),[x4,y4,1]);return mm(m,[v[0],0,0,0,v[1],0,0,0,v[2]]);}
+function pin(w,h,q){let t=mm(b2p(...q),adj(b2p(0,0,w,0,0,h,w,h)));for(let i=0;i<9;i++)t[i]/=t[8];
+  return`matrix3d(${[t[0],t[3],0,t[6],t[1],t[4],0,t[7],0,0,1,0,t[2],t[5],0,t[8]].join(',')})`;}
+
+/* ---------------- geometry ---------------- */
+const WW=1440, WH=900, S0=1040/1440;
+const FLAT=[800,215, 1840,215, 800,865, 1840,865];
+// laptop display corners in the source footage (TL,TR,BL,BR), 1px overscan
+const SCREEN=[886,191, 1673,249, 839,679, 1614,779];
+const O=[1250,485];
+const heroInWin={x:28,y:88+84,w:1384,h:500,r:22};
+const SCROLL=459;
+
+/* ---------------- video time mapping ---------------- */
+const VIDS=[
+  {el:$('vBlur'), map:t=>Math.min(t,5.0)},
+  {el:$('vHero'), map:t=>Math.min(t,5.0)},
+  {el:$('vHeroFull'), map:t=>Math.min(t,5.0)},
+  {el:$('vShop'), map:t=>Math.min(3.28,Math.max(0.07,t-2.85+0.07))},
+];
+
+const words1=[...document.querySelectorAll('#l1 .wi')], words2=[...document.querySelectorAll('#l2 .wi')];
+const cards=[0,1,2,3].map(i=>{const c=$('c'+i);return{c,sk:c.querySelector('.sk'),img:c.querySelector('img'),skl:[...c.querySelectorAll('.skl')],txt:c.querySelector('.txt'),heart:c.querySelector('.heart')};});
+let L2H=0;
+function mix(a,b,u){return a.map((v,i)=>Math.round(v+(b[i]-v)*u));}
+
+function render(t){
+  /* --- phase A: full-bleed footage pulls back into the website hero --- */
+  const uZ=E.inOut(P(t,0.25,1.15));
+  const hx=800+heroInWin.x*S0, hy=215+heroInWin.y*S0, hw=heroInWin.w*S0, hh=heroInWin.h*S0, hr=heroInWin.r*S0;
+  const hf=$('heroFull');
+  hf.style.left=L(0,hx,uZ)+'px'; hf.style.top=L(0,hy,uZ)+'px';
+  hf.style.width=L(1920,hw,uZ)+'px'; hf.style.height=L(1080,hh,uZ)+'px';
+  hf.style.borderRadius=L(0,hr,uZ)+'px';
+  hf.style.opacity = t<1.16?1:0;
+
+  /* --- window corners: flat -> pinned on laptop --- */
+  const uPin=E.inOut(P(t,2.85,3.5));
+  let S; if(t<2.85)S=1.10; else if(t<3.5)S=L(1.10,1.0,E.out(P(t,2.85,3.5))); else S=L(1.0,1.03,E.soft(P(t,3.5,6.0)));
+  const Q=SCREEN.map((v,i)=>O[i%2]+S*(v-O[i%2]));
+  const C=FLAT.map((v,i)=>L(v,Q[i],uPin));
+  const M=pin(WW,WH,C);
+  const win=$('win'), ws=$('winShadow');
+  win.style.transform=M; ws.style.transform=M;
+  win.style.opacity=E.soft(P(t,0.5,1.0));
+  ws.style.opacity=E.soft(P(t,0.6,1.1))*(1-uPin);
+  const rad=L(18,4,uPin); win.style.borderRadius=rad+'px'; ws.style.borderRadius=rad+'px';
+  $('glare').style.opacity=uPin*0.55;
+  $('dim').style.opacity=uPin*0.06;
+
+  /* --- backgrounds --- */
+  const sw=$('shopWrap');
+  sw.style.transform=`translate(${O[0]*(1-S)}px,${O[1]*(1-S)}px) scale(${S})`;
+  sw.style.opacity=E.soft(P(t,2.85,3.2));
+  const bo=1-E.soft(P(t,2.95,3.35));
+  $('vBlur').style.opacity=bo; $('veil').style.opacity=bo;
+
+  /* --- page scroll + recommendation section reveal --- */
+  $('page').style.transform=`translateY(${-SCROLL*E.inOut(P(t,1.15,1.95))}px)`;
+  const uh=E.out(P(t,1.3,1.75));
+  $('recHead').style.opacity=uh; $('recHead').style.transform=`translateY(${18*(1-uh)}px)`;
+  const us=E.out(P(t,1.4,1.85));
+  $('recSub').style.opacity=us; $('recSub').style.transform=`translateY(${14*(1-us)}px)`;
+  $('spark').style.transform=`rotate(${t*60}deg) scale(${1+0.18*Math.sin(Math.PI*P(t,1.35,1.9))})`;
+  $('glint').style.left=L(-80,330,E.inOut(P(t,2.0,2.7)))+'px';
+  const shimmer=((t*0.9)%1);
+  cards.forEach((k,i)=>{
+    const a=1.45+0.08*i, b=1.95+0.1*i;
+    const ua=E.out(P(t,a,a+0.4)), ub=E.soft(P(t,b,b+0.35));
+    k.c.style.opacity=ua; k.c.style.transform=`translateY(${26*(1-ua)}px)`;
+    k.sk.style.backgroundPosition=`${100-shimmer*200}% 0`; k.sk.style.opacity=1-ub;
+    k.skl.forEach(s=>{s.style.backgroundPosition=`${100-shimmer*200}% 0`;s.style.opacity=1-ub;});
+    k.img.style.opacity=ub; k.img.style.transform=`scale(${L(1.05,1,ub)})`;
+    k.txt.style.opacity=ub; k.heart.style.opacity=ub;
+  });
+
+  /* --- cursor: browse, hover the corner sofa, click --- */
+  const uc=E.inOut(P(t,3.85,5.0));
+  const cx=L(1010,214,uc), cy=L(760,472,uc)-70*Math.sin(Math.PI*uc);
+  const cu=$('cursor');
+  const click=P(t,5.55,5.75); const cs=1-0.14*Math.sin(Math.PI*click);
+  cu.style.opacity=E.out(P(t,3.7,3.95));
+  cu.style.transform=`translate(${cx-4}px,${cy-3}px) scale(${cs})`;
+  const uhv=E.out(P(t,4.95,5.3));
+  const c0=cards[0];
+  c0.c.style.transform=`translateY(${-8*uhv}px)`;
+  c0.c.style.boxShadow=`0 ${18*uhv}px ${40*uhv}px rgba(31,29,26,${0.16*uhv})`;
+  c0.img.style.transform=`scale(${1+0.04*uhv})`;
+  $('qv').style.opacity=uhv; $('qv').style.transform=`translateX(-50%) translateY(${10*(1-uhv)}px)`;
+  const ur=P(t,5.58,6.0), rp=$('ripple');
+  rp.style.opacity=ur>0&&ur<1?0.7*(1-ur):0;
+  const rr=L(6,70,E.out(ur)); rp.style.width=rp.style.height=rr*2+'px';
+  rp.style.transform=`translate(${214-rr}px,${472-rr}px)`;
+
+  /* --- UMM logo bug --- */
+  const ub=E.out(P(t,0.35,0.9));
+  $('bug').style.opacity=ub; $('bug').style.transform=`translateY(${-14*(1-ub)}px)`;
+
+  /* --- UMM copy card --- */
+  const up=E.out(P(t,1.0,1.45)), panel=$('panel');
+  panel.style.opacity=up; panel.style.transform=`translateY(${30*(1-up)}px) scale(${L(.97,1,up)})`;
+  words1.forEach((w,i)=>{const u=E.out(P(t,1.12+0.1*i,1.67+0.1*i));w.style.transform=`translateY(${115*(1-u)}%)`;});
+  const ud=E.soft(P(t,3.45,3.9));
+  $('l1').style.color=`rgb(${mix([16,14,20],[138,138,150],ud).join(',')})`;
+  const u2=E.inOut(P(t,3.4,3.85));
+  $('l2wrap').style.height=(L2H*u2)+'px';
+  words2.forEach((w,i)=>{const u=E.out(P(t,3.55+0.08*i,4.1+0.08*i));w.style.transform=`translateY(${115*(1-u)}%)`;});
+  $('mark').style.transform=`scaleX(${E.inOut(P(t,4.15,4.6))})`;
+}
+
+/* ---------------- playback / render harness ---------------- */
+const params=new URLSearchParams(location.search);
+const RENDER=params.has('render');
+function fit(){const s=RENDER?1:Math.min(innerWidth/1920,innerHeight/1080);const st=$('stage');st.style.transform=`scale(${s})`;st.style.left=((innerWidth-1920*s)/2)+'px';st.style.top=((innerHeight-1080*s)/2)+'px';}
+addEventListener('resize',fit);
+
+function seekVideo(v,time){return new Promise(res=>{if(Math.abs(v.currentTime-time)<0.0005||v.readyState<1&&false){res();return;}
+  const done=()=>{v.removeEventListener('seeked',done);res();};v.addEventListener('seeked',done);v.currentTime=time;});}
+window.__seek=async t=>{await Promise.all(VIDS.map(o=>seekVideo(o.el,o.map(t))));render(t);
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));return true;};
+
+window.__ready=(async()=>{
+  await document.fonts.ready;
+  await Promise.all(VIDS.map(o=>o.el.readyState>=2?0:new Promise(r=>o.el.addEventListener('loadeddata',r,{once:true}))));
+  await Promise.all([...document.images].map(i=>i.complete?0:new Promise(r=>i.onload=i.onerror=r)));
+  L2H=$('l2').getBoundingClientRect().height/( RENDER?1:parseFloat(getComputedStyle($('stage')).transform.split(',')[0].replace('matrix(',''))||1);
+  L2H=$('l2').offsetHeight;
+  VIDS.forEach(o=>o.el.pause());
+  fit(); render(0); return true;
+})();
+
+if(!RENDER){
+  let t0=null, playing=false;
+  async function start(){await window.__ready;for(const o of VIDS){o.el.currentTime=o.map(0);}t0=performance.now();playing=true;VIDS.forEach(o=>o.el.play().catch(()=>{}));loop();}
+  function loop(){if(!playing)return;let t=(performance.now()-t0)/1000;if(t>DURATION+1.2){t0=performance.now();t=0;VIDS.forEach(o=>{o.el.currentTime=o.map(0);});}
+    const tt=Math.min(t,DURATION);
+    VIDS.forEach(o=>{const vt=o.map(tt);if(Math.abs(o.el.currentTime-vt)>0.12)o.el.currentTime=vt;if(tt>=DURATION||vt>=4.99&&o.el!==$('vShop'))o.el.pause();else if(o.el.paused)o.el.play().catch(()=>{});});
+    render(tt);requestAnimationFrame(loop);}
+  document.addEventListener('click',()=>{if(!playing)start();});
+  window.__ready.then(()=>{fit();start();});
+}
+</script>
+</body>
+</html>
